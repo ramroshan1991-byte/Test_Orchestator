@@ -1,0 +1,100 @@
+
+> test-orchestrator-nextjs@2.0.0 dev
+> next dev
+
+   ▲ Next.js 15.5.14
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.7:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling /test-plans ...
+ ✓ Compiled /test-plans in 1447ms (1328 modules)
+ GET /test-plans 200 in 2067ms
+ ✓ Compiled in 312ms (530 modules)
+ GET /test-plans 200 in 72ms
+ ✓ Compiled in 881ms (1328 modules)
+ GET /test-plans 200 in 125ms
+ ✓ Compiled in 275ms (530 modules)
+ GET /test-plans 200 in 24ms
+ GET /test-plans 200 in 393ms
+ ✓ Compiled in 358ms (530 modules)
+ GET /test-plans 200 in 38ms
+ ✓ Compiled in 512ms (1328 modules)
+ GET /test-plans 200 in 75ms
+ ✓ Compiled in 458ms (1328 modules)
+ GET /test-plans 200 in 64ms
+ ✓ Compiled in 339ms (1328 modules)
+ GET /test-plans 200 in 35ms
+ ✓ Compiled in 173ms (530 modules)
+ GET /test-plans 200 in 56ms
+ ✓ Compiled in 250ms (530 modules)
+ GET /test-plans 200 in 24ms
+ GET /test-plans 200 in 275ms
+ ○ Compiling /test-cases ...
+ ✓ Compiled /test-cases in 766ms (1339 modules)
+ GET /test-cases 200 in 1169ms
+ GET /test-plans 200 in 112ms
+ GET /test-plans 200 in 36ms
+ GET /test-cases 200 in 31ms
+ GET /test-plans 200 in 101ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1563ms (1350 modules)
+ GET / 200 in 1902ms
+ GET /test-plans 200 in 59ms
+ ✓ Compiled /jira-connect in 477ms (1369 modules)
+ GET /jira-connect 200 in 544ms
+ GET /jira-connect 200 in 211ms
+ GET /jira-connect 200 in 37ms
+ GET /test-plans 200 in 76ms
+ GET /jira-connect 200 in 30ms
+ GET /test-plans 200 in 68ms
+ GET /jira-connect 200 in 577ms
+ GET /jira-connect 200 in 156ms
+ GET /jira-connect 200 in 113ms
+ GET /test-plans 200 in 486ms
+ GET /jira-connect 200 in 54ms
+ GET /test-plans 200 in 42ms
+ ✓ Compiled in 1541ms (1383 modules)
+ GET /test-plans 200 in 313ms
+ GET /jira-connect 200 in 310ms
+ GET /test-cases 200 in 121ms
+ GET /jira-connect 200 in 353ms
+ GET /jira-connect 200 in 72ms
+ GET / 200 in 109ms
+ GET /jira-connect 200 in 31ms
+ GET /jira-connect 200 in 115ms
+ GET /jira-connect 200 in 151ms
+ GET /jira-connect 200 in 135ms
+ GET / 200 in 103ms
+ GET / 200 in 48ms
+ GET / 200 in 711ms
+ GET /jira-connect 200 in 98ms
+ GET /jira-connect 200 in 112ms
+ GET /test-plans 200 in 64ms
+ GET /jira-connect 200 in 45ms
+ GET /jira-connect 200 in 488ms
+ GET /test-plans 200 in 81ms
+ ✓ Compiled in 1209ms (1383 modules)
+ GET /test-plans 200 in 241ms
+ GET /test-plans 200 in 72ms
+ GET /test-cases 200 in 80ms
+ ○ Compiling /code-generator ...
+ ✓ Compiled /code-generator in 914ms (1382 modules)
+ GET /code-generator 200 in 1032ms
+ ✓ Compiled in 479ms (1396 modules)
+ GET /code-generator 200 in 72ms
+ GET /code-generator 200 in 36ms
+ GET /test-cases 200 in 56ms
+ GET /code-generator 200 in 60ms
+ GET /test-cases 200 in 64ms
+ ○ Compiling /settings ...
+ ✓ Compiled /settings in 909ms (1401 modules)
+ GET /settings 200 in 1014ms
+ GET /test-plans 200 in 61ms
+ GET /test-plans 200 in 549ms
+ GET /jira-connect 200 in 55ms
+ GET /jira-connect 200 in 72ms
+ GET /jira-connect 200 in 114ms
+ GET /test-plans 200 in 53ms

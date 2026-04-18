@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Start Backend Server",
+			"type": "shell",
+			"command": "cd /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/backend && npm run dev",
+			"isBackground": true
+		}
+	]
+}
