@@ -136,7 +136,7 @@ class AIService {
   "approvals": [{"role":"string","name":"","signature":"","date":""}]
 }`;
 
-    const userMsg = `Generate a complete test plan for this Jira story:\n\n${JSON.stringify(
+    const userMsg = `Generate a complete test plan for this Jira story. Assume the target application being tested is "https://www.saucedemo.com/". Please incorporate context of this website where applicable, but rely strictly on the requirements provided in the story:\n\n${JSON.stringify(
       Array.isArray(storyData) ? storyData : [storyData], null, 2
     )}\n\nToday's date: ${today}\n\nUse this exact JSON schema:\n${schema}\n\nFill all fields with specific, meaningful values derived from the story. Return ONLY valid JSON.`;
 
@@ -299,7 +299,9 @@ User Story: ${storyData.title || storyData.summary || 'Feature'}
 Acceptance Criteria: ${JSON.stringify(storyData.acceptanceCriteria || [])}
 Test Plan Scope: ${JSON.stringify(testPlanScope || {})}
 
-Instructions: Generate test cases strictly based on the provided user story data, test scenarios, or test plan constraints. If the provided context is broad or minimal, you MUST systematically generate at least 20-25 comprehensive test cases covering positive, negative, edge cases, and boundary scenario mappings. Return ONLY a valid JSON array.`;
+Instructions: Generate test cases strictly based on the provided user story data, test scenarios, or test plan constraints.
+The target application is "https://www.saucedemo.com/". You may use your knowledge of this website's structure when formulating detailed steps, but you MUST STRICTLY adhere to the Jira story and its Acceptance Criteria. Do NOT assume or invent features that are not explicitly stated in the Jira story. 
+If the provided context is broad or minimal, systematically generate at least 20-25 comprehensive test cases covering positive, negative, edge cases, and boundary scenarios for the exact feature requested. Return ONLY a valid JSON array.`;
 
     try {
       const response = await client.messages.create({
@@ -321,28 +323,28 @@ Instructions: Generate test cases strictly based on the provided user story data
     let prompt = '';
 
     if (options.featureFileBDD) {
-      prompt = `Generate a standard Cucumber BDD Feature File for the following test case. 
+      prompt = `The target application is "https://www.saucedemo.com/". Generate a standard Cucumber BDD Feature File for the following test case. 
 Format as a proper .feature file using Given/When/Then syntax, followed by the step definition code in ${framework}.
 Include: ${options.pageObjectModel ? 'Page Object Model implementation mapping to the steps,' : ''}
 ${options.addAssertions ? 'assertions in the Then steps,' : ''}
 and ${options.addComments ? 'descriptive comments' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Return only the code (Feature file content followed by step definition implementation), no markdown blocks of explanation.`;
+Use appropriate locators for saucedemo.com based on the steps, but strictly adhere to the provided Test Case logic. Return only the code (Feature file content followed by step definition implementation), no markdown blocks of explanation.`;
     } else if (framework === 'selenium-java') {
-      prompt = `Generate production-ready Selenium WebDriver code in Java using 
+      prompt = `The target application is "https://www.saucedemo.com/". Generate production-ready Selenium WebDriver code in Java using 
 TestNG and${options.pageObjectModel ? ' Page Object Model' : ''} for the following test case.
 Include: imports, ${options.pageObjectModel ? 'page class,' : ''} test class, 
 ${options.addAssertions ? 'assertions,' : ''} explicit waits,
 and ${options.addComments ? 'meaningful comments' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Return only the Java code, no explanation.`;
+Use appropriate locators for saucedemo.com based on the steps. Return only the Java code, no explanation.`;
     } else if (framework === 'playwright-js') {
-      prompt = `Generate production-ready Playwright test code in JavaScript/TypeScript
+      prompt = `The target application is "https://www.saucedemo.com/". Generate production-ready Playwright test code in JavaScript/TypeScript
 using ${options.pageObjectModel ? 'Page Object Model pattern ' : ''}for the following test case.
 Include: imports, page fixtures, locators, ${options.addAssertions ? 'assertions,' : ''}
 async/await pattern, and ${options.addComments ? 'descriptive test blocks' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Return only the code, no explanation.`;
+Use appropriate locators for saucedemo.com based on the steps. Return only the code, no explanation.`;
     }
 
     try {
