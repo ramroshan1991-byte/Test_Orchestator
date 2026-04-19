@@ -1,179 +1,287 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { ToastContainer } from '@/components/Toast';
 import { useAppStore } from '@/store/appStore';
-import { Zap, TrendingUp, CheckCircle, Code } from 'lucide-react';
-
-interface DashboardCard {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: string;
-}
+import {
+  Zap, TrendingUp, CheckCircle, Code, ArrowRight,
+  ChevronRight, Link2, FileText, Bot, Activity
+} from 'lucide-react';
 
 export default function Dashboard() {
+  const router = useRouter();
   const { testPlans, testCases, codeHistory } = useAppStore();
-  const [stats, setStats] = useState<DashboardCard[]>([]);
+  const [aiStatus, setAiStatus] = useState<{ activeProvider: string; hasApiKey: boolean } | null>(null);
 
+  const testPlanList = Object.values(testPlans || {}) as any[];
+  const testCaseList = Object.values(testCases || {}).flat() as any[];
+  const codeCount = Object.keys(codeHistory || {}).length;
+
+  // Fetch AI provider status
   useEffect(() => {
-    const testPlanCount = Object.keys(testPlans).length;
-    const testCaseCount = Object.values(testCases || {}).flat().length;
-    const codeCount = Object.keys(codeHistory).length;
+    fetch('/api/ai/providers-status')
+      .then(r => r.json())
+      .then(setAiStatus)
+      .catch(() => setAiStatus({ activeProvider: 'Unknown', hasApiKey: false }));
+  }, []);
 
-    setStats([
-      {
-        title: 'Test Plans',
-        value: testPlanCount,
-        icon: <TrendingUp className="w-6 h-6" />,
-        color: 'blue',
-      },
-      {
-        title: 'Test Cases',
-        value: testCaseCount,
-        icon: <CheckCircle className="w-6 h-6" />,
-        color: 'green',
-      },
-      {
-        title: 'Generated Code',
-        value: codeCount,
-        icon: <Code className="w-6 h-6" />,
-        color: 'purple',
-      },
-    ]);
-  }, [testPlans, testCases, codeHistory]);
+  const stats = [
+    {
+      title: 'Test Plans',
+      value: testPlanList.length,
+      icon: <TrendingUp className="w-6 h-6" />,
+      color: 'blue',
+      href: '/test-plans',
+      description: 'AI-generated test plans',
+    },
+    {
+      title: 'Test Cases',
+      value: testCaseList.length,
+      icon: <CheckCircle className="w-6 h-6" />,
+      color: 'green',
+      href: '/test-cases',
+      description: 'Detailed test case library',
+    },
+    {
+      title: 'Generated Code',
+      value: codeCount,
+      icon: <Code className="w-6 h-6" />,
+      color: 'purple',
+      href: '/code-generator',
+      description: 'Automation scripts ready',
+    },
+  ];
 
   const getColorClasses = (color: string) => {
     switch (color) {
-      case 'blue':
-        return 'from-blue-900 to-blue-800 border-blue-700';
-      case 'green':
-        return 'from-green-900 to-green-800 border-green-700';
-      case 'purple':
-        return 'from-purple-900 to-purple-800 border-purple-700';
-      default:
-        return 'from-slate-800 to-slate-700 border-slate-600';
+      case 'blue': return 'from-blue-900/60 to-blue-800/40 border-blue-700/50 hover:border-blue-500';
+      case 'green': return 'from-green-900/60 to-green-800/40 border-green-700/50 hover:border-green-500';
+      case 'purple': return 'from-purple-900/60 to-purple-800/40 border-purple-700/50 hover:border-purple-500';
+      default: return 'from-slate-800 to-slate-700 border-slate-600';
     }
   };
+
+  const getIconBg = (color: string) => {
+    switch (color) {
+      case 'blue': return 'bg-blue-500/20 text-blue-400';
+      case 'green': return 'bg-green-500/20 text-green-400';
+      case 'purple': return 'bg-purple-500/20 text-purple-400';
+      default: return 'bg-slate-600 text-slate-300';
+    }
+  };
+
+  const workflowSteps = [
+    { emoji: '🔗', label: 'Connect to Jira', desc: 'Import user stories to start test generation', href: '/jira-connect', color: 'text-blue-400' },
+    { emoji: '📋', label: 'Generate Test Plans', desc: 'Use AI to create comprehensive test plans', href: '/test-plans', color: 'text-indigo-400' },
+    { emoji: '✅', label: 'Generate Test Cases', desc: 'Create detailed, realistic test cases', href: '/test-cases', color: 'text-green-400' },
+    { emoji: '🤖', label: 'Generate Automation Code', desc: 'Build Selenium, Playwright or BDD scripts', href: '/code-generator', color: 'text-purple-400' },
+  ];
+
+  const recentTestPlans = testPlanList.slice(-5).reverse();
+  const recentTestCases = testCaseList.slice(-6).reverse();
 
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
+
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+        <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-8 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/30">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
+                <p className="text-slate-400 text-sm">QA Automation Overview</p>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
+            {/* AI Status Badge */}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium ${
+              aiStatus?.hasApiKey
+                ? 'bg-green-900/30 border-green-700/50 text-green-300'
+                : 'bg-red-900/30 border-red-700/50 text-red-400'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${aiStatus?.hasApiKey ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <Bot className="w-4 h-4" />
+              {aiStatus ? aiStatus.activeProvider : 'Checking AI...'}
+            </div>
           </div>
-          <p className="text-slate-400">
-            Welcome back! Here's your QA automation overview.
-          </p>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+
+          {/* Stats Cards — Clicking navigates to the page */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stats.map((stat) => (
-              <div
+              <button
                 key={stat.title}
-                className={`bg-gradient-to-br ${getColorClasses(
-                  stat.color
-                )} border rounded-xl p-6 transition-transform hover:scale-105`}
+                onClick={() => router.push(stat.href)}
+                className={`bg-gradient-to-br ${getColorClasses(stat.color)} border rounded-xl p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-slate-200 font-medium">{stat.title}</h3>
-                  <div className="text-slate-300 opacity-70">{stat.icon}</div>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getIconBg(stat.color)}`}>
+                    {stat.icon}
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
-                <p className="text-4xl font-bold text-white">{stat.value}</p>
-              </div>
+                <p className="text-4xl font-bold text-white mb-1">{stat.value}</p>
+                <p className="text-slate-300 font-medium text-sm">{stat.title}</p>
+                <p className="text-slate-500 text-xs mt-1">{stat.description}</p>
+              </button>
             ))}
           </div>
 
-          {/* Recent Activity */}
-          <div className="card p-6">
-            <h2 className="text-xl font-bold text-slate-100 mb-4">
-              Getting Started
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-4 bg-slate-700 rounded-lg">
-                <span className="text-2xl">1️⃣</span>
-                <div>
-                  <p className="font-medium text-slate-100">Connect to Jira</p>
-                  <p className="text-sm text-slate-400">
-                    Import your Jira stories to get started with test generation
-                  </p>
-                </div>
+          {/* Two column layout: Workflow + Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Workflow Steps */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Activity className="w-5 h-5 text-blue-400" />
+                <h2 className="text-lg font-bold text-slate-100">Quick Workflow</h2>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-slate-700 rounded-lg">
-                <span className="text-2xl">2️⃣</span>
-                <div>
-                  <p className="font-medium text-slate-100">Generate Test Plans</p>
-                  <p className="text-sm text-slate-400">
-                    Use AI to automatically create comprehensive test plans
-                  </p>
-                </div>
+              <div className="space-y-2">
+                {workflowSteps.map((step, i) => (
+                  <button
+                    key={i}
+                    onClick={() => router.push(step.href)}
+                    className="w-full flex items-center gap-4 p-4 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-700/30 hover:border-slate-600 rounded-xl transition-all duration-200 text-left group"
+                  >
+                    <span className="text-2xl">{step.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold text-sm ${step.color}`}>{step.label}</p>
+                      <p className="text-slate-400 text-xs mt-0.5 truncate">{step.desc}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                  </button>
+                ))}
               </div>
-              <div className="flex items-start gap-3 p-4 bg-slate-700 rounded-lg">
-                <span className="text-2xl">3️⃣</span>
-                <div>
-                  <p className="font-medium text-slate-100">Generate Test Cases</p>
-                  <p className="text-sm text-slate-400">
-                    Create detailed test cases with AI assistance
-                  </p>
+            </div>
+
+            {/* Recent Test Plans */}
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-400" />
+                  <h2 className="text-lg font-bold text-slate-100">Recent Test Plans</h2>
                 </div>
+                <button
+                  onClick={() => router.push('/test-plans')}
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                >
+                  View all <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-slate-700 rounded-lg">
-                <span className="text-2xl">4️⃣</span>
-                <div>
-                  <p className="font-medium text-slate-100">Generate Code</p>
-                  <p className="text-sm text-slate-400">
-                    Generate automated test code in your preferred framework
-                  </p>
+
+              {recentTestPlans.length > 0 ? (
+                <div className="space-y-2">
+                  {recentTestPlans.map((plan: any, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => router.push('/test-plans')}
+                      className="w-full flex items-center gap-3 p-3 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-700/30 hover:border-indigo-700/50 rounded-lg transition-all duration-200 text-left group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-indigo-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-slate-200 text-sm font-medium truncate">
+                          {plan.storyTitle || plan.project_name || 'Test Plan'}
+                        </p>
+                        <p className="text-slate-500 text-xs">
+                          {plan.storyKey || plan.version || '—'}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 flex-shrink-0 transition-colors" />
+                    </button>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-32 text-center">
+                  <FileText className="w-10 h-10 text-slate-600 mb-3" />
+                  <p className="text-slate-400 text-sm mb-3">No test plans yet</p>
+                  <button
+                    onClick={() => router.push('/test-plans')}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Generate First Plan →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="card p-6">
-            <h2 className="text-xl font-bold text-slate-100 mb-4">
-              Platform Features
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-slate-700 rounded-lg">
-                <p className="text-2xl font-bold text-blue-400">🤖</p>
-                <p className="text-sm font-medium text-slate-200 mt-2">
-                  AI-Powered Generation
-                </p>
+          {/* Recent Test Cases — Full width */}
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <h2 className="text-lg font-bold text-slate-100">Recent Test Cases</h2>
               </div>
-              <div className="p-3 bg-slate-700 rounded-lg">
-                <p className="text-2xl font-bold text-green-400">✅</p>
-                <p className="text-sm font-medium text-slate-200 mt-2">
-                  Custom Prompts
-                </p>
-              </div>
-              <div className="p-3 bg-slate-700 rounded-lg">
-                <p className="text-2xl font-bold text-purple-400">📊</p>
-                <p className="text-sm font-medium text-slate-200 mt-2">
-                  Code History Tracking
-                </p>
-              </div>
-              <div className="p-3 bg-slate-700 rounded-lg">
-                <p className="text-2xl font-bold text-orange-400">⚙️</p>
-                <p className="text-sm font-medium text-slate-200 mt-2">
-                  Multi-Framework Support
-                </p>
-              </div>
+              <button
+                onClick={() => router.push('/test-cases')}
+                className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1 transition-colors"
+              >
+                View all <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
+
+            {recentTestCases.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {recentTestCases.map((tc: any, i: number) => {
+                  const tcId = tc.tid || tc.id || `TC-${i + 1}`;
+                  const tcName = tc.scenario || tc.name || 'Test Case';
+                  const priority = tc.priority || 'Medium';
+                  const priorityColor =
+                    priority === 'Critical' ? 'text-red-400 bg-red-900/30 border-red-800/40' :
+                    priority === 'High' ? 'text-orange-400 bg-orange-900/30 border-orange-800/40' :
+                    'text-yellow-400 bg-yellow-900/30 border-yellow-800/40';
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => router.push('/test-cases')}
+                      className="flex items-start gap-3 p-4 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-700/30 hover:border-green-700/50 rounded-xl text-left transition-all duration-200 group"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-xs text-blue-400 mb-1">{tcId}</p>
+                        <p className="text-slate-200 text-sm font-medium truncate leading-snug">{tcName}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priorityColor}`}>
+                            {priority}
+                          </span>
+                          <span className="text-xs text-slate-500">{tc.status || 'Not Executed'}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 self-center flex-shrink-0 transition-colors" />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-32 text-center">
+                <CheckCircle className="w-10 h-10 text-slate-600 mb-3" />
+                <p className="text-slate-400 text-sm mb-3">No test cases yet</p>
+                <button
+                  onClick={() => router.push('/test-cases')}
+                  className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg text-xs font-medium transition-colors"
+                >
+                  Generate Test Cases →
+                </button>
+              </div>
+            )}
           </div>
+
         </div>
       </main>
-
       <ToastContainer />
     </div>
   );
