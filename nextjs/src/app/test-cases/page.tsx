@@ -51,12 +51,23 @@ export default function TestCasesPage() {
   const [filterStatus, setFilterStatus] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeGenerator, setActiveGenerator] = useState<'none' | 'custom'>('none');
+  const [activeTab, setActiveTab] = useState<'plan' | 'custom'>('plan');
   const router = useRouter();
 
-  const testCasesArray = useMemo(() => {
-    return Object.values(storeTestCases || {}).flat() as any[];
+  // Plan-generated cases: all keys EXCEPT 'custom_gen'
+  const planTestCases = useMemo(() => {
+    return Object.entries(storeTestCases || {})
+      .filter(([key]) => key !== 'custom_gen')
+      .flatMap(([, cases]) => cases) as any[];
   }, [storeTestCases]);
+
+  // Custom-generated cases: only from 'custom_gen' key
+  const customTestCases = useMemo(() => {
+    return (storeTestCases?.['custom_gen'] || []) as any[];
+  }, [storeTestCases]);
+
+  // Active list based on selected tab
+  const testCasesArray = activeTab === 'plan' ? planTestCases : customTestCases;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -195,35 +206,53 @@ export default function TestCasesPage() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
-          <h1 className="text-3xl font-bold text-slate-100 mb-2">Test Cases</h1>
-          <p className="text-slate-400">
-            {filteredCases.length} test case{filteredCases.length !== 1 ? 's' : ''} found
+          <h1 className="text-3xl font-bold text-slate-100 mb-1">Test Cases</h1>
+          <p className="text-slate-400 text-sm">
+            {activeTab === 'plan'
+              ? `${filteredCases.length} test case${filteredCases.length !== 1 ? 's' : ''} from Test Plans`
+              : `${filteredCases.length} custom test case${filteredCases.length !== 1 ? 's' : ''}`
+            }
           </p>
         </header>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           
-          {/* Generator Tabs */}
-          <div className="flex gap-4 mb-6">
-             <button 
-               onClick={() => router.push('/test-plans')}
-               className="px-6 py-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-medium hover:bg-slate-700 flex items-center gap-2 hover:text-white transition-all"
-             >
-               📋 From Test Plan
-             </button>
-             <button 
-               onClick={() => setActiveGenerator(activeGenerator === 'custom' ? 'none' : 'custom')}
-               className={`px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all ${activeGenerator === 'custom' ? 'bg-amber-600 border border-amber-500 text-white shadow-lg shadow-amber-900/20' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'}`}
-             >
-               ✏️ Custom Generator
-             </button>
+          {/* Source Tabs */}
+          <div className="flex gap-0 mb-6 bg-slate-800/60 border border-slate-700 rounded-xl p-1 w-fit">
+            <button
+              onClick={() => { setActiveTab('plan'); setCurrentPage(1); setSearchTerm(''); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'plan'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              📋 From Test Plans
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'plan' ? 'bg-blue-500/40 text-blue-100' : 'bg-slate-700 text-slate-400'
+              }`}>{planTestCases.length}</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('custom'); setCurrentPage(1); setSearchTerm(''); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'custom'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              ✏️ Custom Generator
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === 'custom' ? 'bg-amber-500/40 text-amber-100' : 'bg-slate-700 text-slate-400'
+              }`}>{customTestCases.length}</span>
+            </button>
           </div>
 
-          {activeGenerator === 'custom' && (
-             <div className="mb-8">
-               <CustomGenerator onGenerateSuccess={() => {/* Keep open or handle summary */}} />
-             </div>
+          {/* Custom Generator Form — only shown on Custom tab */}
+          {activeTab === 'custom' && (
+            <div className="mb-6">
+              <CustomGenerator onGenerateSuccess={() => {}} />
+            </div>
           )}
 
           {/* Search & Filter Bar */}
