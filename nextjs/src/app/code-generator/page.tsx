@@ -66,7 +66,7 @@ const triggerDownload = (blob: Blob, filename: string) => {
 };
 
 export default function CodeGeneratorPage() {
-  const { testCases, codeHistory, saveCodeToHistory, customPromptMode, customPrompts } = useAppStore();
+  const { testCases, codeHistory, saveCodeToHistory } = useAppStore();
   const { showToast } = useToast();
 
   const testCasesArray = useMemo(() => Object.values(testCases || {}).flat(), [testCases]);
@@ -87,7 +87,7 @@ export default function CodeGeneratorPage() {
   const [copiedCode, setCopiedCode] = useState(false);
 
   const testCaseOptions = testCasesArray.length > 0
-    ? testCasesArray.map((tc) => ({
+    ? testCasesArray.map((tc: any) => ({
         id: tc.tid || tc.id,
         name: tc.tid || tc.id || `TC-UNKN`,
         title: tc.scenario || tc.name,
@@ -150,7 +150,7 @@ export default function CodeGeneratorPage() {
 
       setGeneratedCode(codeOutput);
       
-      const tcId = selectedTestCase.tid || selectedTestCase.id;
+      const tcId = (selectedTestCase as any).tid || selectedTestCase.id;
       if (tcId) {
         saveCodeToHistory(tcId, selectedFramework, codeOutput);
       }
