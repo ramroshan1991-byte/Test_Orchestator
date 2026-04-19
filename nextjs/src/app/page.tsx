@@ -7,7 +7,7 @@ import { ToastContainer } from '@/components/Toast';
 import { useAppStore } from '@/store/appStore';
 import {
   Zap, TrendingUp, CheckCircle, Code, ArrowRight,
-  ChevronRight, Link2, FileText, Bot, Activity
+  ChevronRight, FileText, Bot, Activity
 } from 'lucide-react';
 
 export default function Dashboard() {
