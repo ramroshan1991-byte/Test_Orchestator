@@ -1,9 +1,31 @@
 import Anthropic from '@anthropic-ai/sdk';
 import axios from 'axios';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const apiKey = process.env.ANTHROPIC_API_KEY || '';
+const client = apiKey.startsWith('sk-ant') ? new Anthropic({
+  apiKey: apiKey,
+}) : null;
+
+async function callAI(messages, maxTokens) {
+  if (apiKey.startsWith('gsk_')) {
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama3-70b-8192',
+      messages: messages,
+      max_tokens: maxTokens,
+    }, {
+      headers: { 'Authorization': `Bearer ${apiKey}` }
+    });
+    return response.data.choices[0].message.content;
+  } else if (client) {
+    const response = await client.messages.create({
+      model: 'claude-3-5-sonnet-20240620', // fixed model name
+      max_tokens: maxTokens,
+      messages: messages
+    });
+    return response.content[0].text;
+  }
+  throw new Error("No valid AI Provider configured.");
+}
 
 class AIService {
   async generateTestPlan(storyData) {
@@ -12,8 +34,8 @@ class AIService {
     const today = new Date().toISOString().split('T')[0];
 
     // Mock plan (no API key) — all 14 template sections
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your_claude_api_key_here' || !client?.messages?.create) {
-      console.warn('Anthropic not configured — returning template-structured mock test plan');
+    if (!apiKey || apiKey === 'your_claude_api_key_here') {
+      console.warn('Anthropic/Groq not configured — returning template-structured mock test plan');
       return {
         storyKey,
         storyTitle,
@@ -141,15 +163,7 @@ class AIService {
     )}\n\nToday's date: ${today}\n\nUse this exact JSON schema:\n${schema}\n\nFill all fields with specific, meaningful values derived from the story. Return ONLY valid JSON.`;
 
     try {
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3500,
-        messages: [
-          { role: 'user', content: `${systemMsg}\n\n${userMsg}` },
-        ],
-      });
-
-      const content = response?.content?.[0]?.text || '';
+      const content = await callAI([{ role: 'user', content: `${systemMsg}\n\n${userMsg}` }], 3500);
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       const raw = jsonMatch ? jsonMatch[0] : content;
       return JSON.parse(raw);
@@ -206,7 +220,7 @@ Instructions: Generate test cases strictly based on the provided user story data
       }
     }
 
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your_claude_api_key_here' || !client?.messages?.create) {
+    if (!apiKey || apiKey === 'your_claude_api_key_here') {
       console.warn('Anthropic not configured - generating dynamic 25 mock array natively');
       
       const moduleName = storyData.title || 'the target module';
@@ -304,13 +318,7 @@ The target application is "https://www.saucedemo.com/". You may use your knowled
 If the provided context is broad or minimal, systematically generate at least 20-25 comprehensive test cases covering positive, negative, edge cases, and boundary scenarios for the exact feature requested. Return ONLY a valid JSON array.`;
 
     try {
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }]
-      });
-
-      const content = response?.content?.[0]?.text || '';
+      const content = await callAI([{ role: 'user', content: prompt }], 4000);
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       return JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch (error) {
@@ -348,18 +356,9 @@ Use appropriate locators for saucedemo.com based on the steps. Return only the c
     }
 
     try {
-      const response = await client.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 3000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
+      const content = await callAI([{ role: 'user', content: prompt }], 3000);
 
-      return response.content[0].text;
+      return content;
     } catch (error) {
       console.error('Error generating automation code:', error);
       throw new Error('Failed to generate automation code: ' + error.message);
