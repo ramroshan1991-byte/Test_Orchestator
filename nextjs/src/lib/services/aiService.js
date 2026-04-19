@@ -315,25 +315,53 @@ Instructions: Generate test cases strictly based on the provided user story data
       return mockCases;
     }
 
-    const prompt = `You are an expert QA engineer. Generate detailed test cases for the following user story, strictly following the provided structure which is based on an official Test Case PDF Template. 
-Return ONLY a valid JSON array where each object matches this EXACT schema:
+    const prompt = `You are an expert QA engineer. Generate detailed test cases for the following user story.
+Return ONLY a valid JSON array. No explanations, no markdown, no code blocks - JUST the JSON array.
+
+Schema for each object:
 ${schema}
 
 User Story: ${storyData.title || storyData.summary || 'Feature'}
 Acceptance Criteria: ${JSON.stringify(storyData.acceptanceCriteria || [])}
-Test Plan Scope: ${JSON.stringify(testPlanScope || {})}
 
 Instructions:
 1. Target application: "https://www.saucedemo.com/".
-2. **Test Steps**: Must be highly realistic, chronological, actionable QA instructions (e.g. "1. Navigate to https://www.saucedemo.com/", "2. Enter username 'standard_user'", "3. Enter password 'secret_sauce'", "4. Click the Login button"). Do not use vague terms like "Initialize parameters" or "Perform action".
-3. **Expected Results**: Must be extremely crisp, concise, and direct (e.g., "Login success - user is redirected to inventory page", "Error message: Epic sadface: Username and password do not match any user in this service", "Invalid username or password"). Avoid fluffy language.
-4. Strictly adhere to the Jira story constraints. Do NOT invent features.
-5. Generate at least 20-25 comprehensive test cases covering positive, negative, edge, and boundary scenarios. Return ONLY a valid JSON array.`;
+2. Test Steps: Must be realistic, chronological, actionable QA steps (e.g. "1. Navigate to https://www.saucedemo.com/", "2. Enter username 'standard_user'", "3. Enter password 'secret_sauce'", "4. Click Login button"). Never use vague terms.
+3. Expected Results: Must be crisp and direct (e.g. "Login success - user redirected to inventory page", "Error: Epic sadface: Username and password do not match any user in this service"). No fluffy language.
+4. Strictly follow the Jira story. Do NOT invent features outside the acceptance criteria.
+5. Generate 10-12 comprehensive test cases covering positive, negative, and edge scenarios.
+6. IMPORTANT: The response must be a COMPLETE, VALID JSON array. Do not truncate.`;
 
     try {
-      const content = await callAI([{ role: 'user', content: prompt }], 4000);
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      return JSON.parse(jsonMatch ? jsonMatch[0] : content);
+      const content = await callAI([{ role: 'user', content: prompt }], 8000);
+      
+      // Extract JSON array from response
+      let jsonStr = content.trim();
+      
+      // Remove markdown code blocks if present
+      jsonStr = jsonStr.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+      
+      // Find the JSON array boundaries
+      const startIdx = jsonStr.indexOf('[');
+      const endIdx = jsonStr.lastIndexOf(']');
+      
+      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+        jsonStr = jsonStr.substring(startIdx, endIdx + 1);
+      }
+      
+      try {
+        return JSON.parse(jsonStr);
+      } catch (parseErr) {
+        // Attempt to repair truncated JSON by closing unclosed structures
+        console.warn('Initial JSON parse failed, attempting repair...');
+        // Find last complete object by finding last "},"  or "}" before a potential truncation
+        const lastValidClose = jsonStr.lastIndexOf('},');
+        if (lastValidClose > 0) {
+          const repaired = jsonStr.substring(0, lastValidClose + 1) + ']';
+          return JSON.parse(repaired);
+        }
+        throw parseErr;
+      }
     } catch (error) {
       console.error('Error generating test cases:', error);
       throw new Error('Failed to generate test cases: ' + (error.message || error));
