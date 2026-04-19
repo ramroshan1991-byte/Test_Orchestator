@@ -288,11 +288,11 @@ Instructions: Generate test cases strictly based on the provided user story data
             testcase_description: `Deep validation of ${cleanMod} targeting ${scenarioTarget} with focus on ${type} and ${scenarioType} metrics.`,
             precondition: `Environment configured for ${cleanMod}. User access verified.`,
             test_steps: [
-              `1. Initialize ${cleanMod} testing parameters`,
-              `2. Perform ${type} action: ${scenarioTarget.substring(0, 40)}`,
-              `3. Verify state transformation reflects ${expResult.substring(0, 30)}`
+              `1. Navigate to https://www.saucedemo.com/`,
+              `2. Ensure system is tracking ${scenarioTarget.substring(0, 40)}`,
+              `3. Execute the ${type} validation scenario`
             ],
-            expected_result: expResult,
+            expected_result: type === 'Negative' ? `Error message displayed: Invalid input or state.` : `Login success or feature validated successfully.`,
             actual_result: '',
             status: 'Not Executed',
             executed_qa_name: '',
@@ -313,9 +313,12 @@ User Story: ${storyData.title || storyData.summary || 'Feature'}
 Acceptance Criteria: ${JSON.stringify(storyData.acceptanceCriteria || [])}
 Test Plan Scope: ${JSON.stringify(testPlanScope || {})}
 
-Instructions: Generate test cases strictly based on the provided user story data, test scenarios, or test plan constraints.
-The target application is "https://www.saucedemo.com/". You may use your knowledge of this website's structure when formulating detailed steps, but you MUST STRICTLY adhere to the Jira story and its Acceptance Criteria. Do NOT assume or invent features that are not explicitly stated in the Jira story. 
-If the provided context is broad or minimal, systematically generate at least 20-25 comprehensive test cases covering positive, negative, edge cases, and boundary scenarios for the exact feature requested. Return ONLY a valid JSON array.`;
+Instructions:
+1. Target application: "https://www.saucedemo.com/".
+2. **Test Steps**: Must be highly realistic, chronological, actionable QA instructions (e.g. "1. Navigate to https://www.saucedemo.com/", "2. Enter username 'standard_user'", "3. Enter password 'secret_sauce'", "4. Click the Login button"). Do not use vague terms like "Initialize parameters" or "Perform action".
+3. **Expected Results**: Must be extremely crisp, concise, and direct (e.g., "Login success - user is redirected to inventory page", "Error message: Epic sadface: Username and password do not match any user in this service", "Invalid username or password"). Avoid fluffy language.
+4. Strictly adhere to the Jira story constraints. Do NOT invent features.
+5. Generate at least 20-25 comprehensive test cases covering positive, negative, edge, and boundary scenarios. Return ONLY a valid JSON array.`;
 
     try {
       const content = await callAI([{ role: 'user', content: prompt }], 4000);
