@@ -19,7 +19,7 @@ export async function GET(request: Request, context: any) {
       return NextResponse.json({ error: 'baseURL, email, and apiToken are required' }, { status: 400 });
     }
 
-    const issue = await jiraService.getIssue(issueKey, baseURL, email, apiToken);
+    const issue = await (jiraService as any).getIssue(issueKey, baseURL, email, apiToken);
     return NextResponse.json({ issue });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });

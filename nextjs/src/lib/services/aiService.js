@@ -357,4 +357,5 @@ Return only the code, no explanation.`;
   }
 }
 
-export default new AIService();
+const aiService = new AIService();
+export default aiService;

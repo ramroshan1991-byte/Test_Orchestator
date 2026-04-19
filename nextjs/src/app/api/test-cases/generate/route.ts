@@ -4,7 +4,7 @@ import aiService from '@/lib/services/aiService';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { storyData, testPlanScope, customPrompt } = body;
+    const { storyData, testPlanScope } = body;
 
     if (!storyData) {
       return NextResponse.json({ error: 'storyData is required' }, { status: 400 });

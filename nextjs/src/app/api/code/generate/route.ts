@@ -4,7 +4,7 @@ import aiService from '@/lib/services/aiService';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { testCase, framework, customPrompt } = body;
+    const { testCase, framework } = body;
 
     if (!testCase || !framework) {
       return NextResponse.json({ error: 'testCase and framework are required' }, { status: 400 });

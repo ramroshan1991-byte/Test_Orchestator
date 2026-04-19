@@ -504,4 +504,5 @@ class JiraService {
   }
 }
 
-export default new JiraService();
+const jiraService = new JiraService();
+export default jiraService;
