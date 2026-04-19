@@ -128,3 +128,106 @@
  ✓ Compiled in 314ms (1402 modules)
  ✓ Compiled in 575ms (1402 modules)
  ✓ Compiled in 1325ms (566 modules)
+ ⨯ Error: Cannot find module './331.js'
+Require stack:
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/webpack-runtime.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/app/test-plans/page.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/require.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/load-components.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/utils.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/swc/options.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/swc/index.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/router-server.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/test-plans/page.js:2:8135)
+    at Object.<anonymous> (.next/server/app/test-plans/page.js:2:8200) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/test-plans'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2s (1734 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+Error: Cannot find module './331.js'
+Require stack:
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/webpack-runtime.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/app/test-plans/page.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/require.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/load-components.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/utils.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/swc/options.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/swc/index.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/router-server.js
+- /Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/node_modules/next/dist/server/lib/start-server.js
+    at <unknown> (.next/server/app/test-plans/page.js:2:8135)
+    at Object.<anonymous> (.next/server/app/test-plans/page.js:2:8200) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array],
+  page: '/test-plans'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+ GET /test-plans 500 in 4062ms
+ GET /test-plans 500 in 285ms
+ ⨯ Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/vendor-chunks/lucide-react.js'
+    at <unknown> (.next/server/app/test-plans/page.js:456:47)
+    at Object.<anonymous> (.next/server/app/test-plans/page.js:459:3) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/vendor-chunks/lucide-react.js',
+  page: '/test-plans'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/vendor-chunks/lucide-react.js'
+    at <unknown> (.next/server/app/test-plans/page.js:456:47)
+    at Object.<anonymous> (.next/server/app/test-plans/page.js:459:3) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/server/vendor-chunks/lucide-react.js',
+  page: '/test-plans'
+}
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+[Error: ENOENT: no such file or directory, open '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/rammac/Documents/AiTesterBlueprint/Test_Orchestator/nextjs/.next/routes-manifest.json'
+}
+ GET /test-plans 500 in 616ms
+ GET /test-plans 500 in 303ms
+ ✓ Compiled in 405ms (717 modules)
+ ✓ Compiled in 287ms (717 modules)
+ ✓ Compiled in 292ms (717 modules)

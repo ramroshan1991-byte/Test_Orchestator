@@ -7,24 +7,34 @@ const client = apiKey.startsWith('sk-ant') ? new Anthropic({
 }) : null;
 
 async function callAI(messages, maxTokens) {
-  if (apiKey.startsWith('gsk_')) {
-    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-      model: 'llama3-70b-8192',
-      messages: messages,
-      max_tokens: maxTokens,
-    }, {
-      headers: { 'Authorization': `Bearer ${apiKey}` }
-    });
-    return response.data.choices[0].message.content;
-  } else if (client) {
-    const response = await client.messages.create({
-      model: 'claude-3-5-sonnet-20240620', // fixed model name
-      max_tokens: maxTokens,
-      messages: messages
-    });
-    return response.content[0].text;
+  try {
+    if (apiKey.startsWith('gsk_')) {
+      const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.3-70b-versatile', // Updated to more stable/recent model
+        messages: messages,
+        max_tokens: maxTokens,
+        temperature: 0.7
+      }, {
+        headers: { 
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data.choices[0].message.content;
+    } else if (client) {
+      const response = await client.messages.create({
+        model: 'claude-3-5-sonnet-20240620',
+        max_tokens: maxTokens,
+        messages: messages
+      });
+      return response.content[0].text;
+    }
+  } catch (error) {
+    const errorData = error.response?.data?.error?.message || error.message;
+    console.error('AI Call Error:', errorData);
+    throw new Error(errorData);
   }
-  throw new Error("No valid AI Provider configured.");
+  throw new Error("No valid AI Provider configured. Ensure ANTHROPIC_API_KEY is set in Vercel.");
 }
 
 class AIService {

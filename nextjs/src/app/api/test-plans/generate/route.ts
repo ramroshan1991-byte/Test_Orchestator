@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     const testPlan = await aiService.generateTestPlan(storyData);
     return NextResponse.json({ testPlan });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Test Plan Generation API Error:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

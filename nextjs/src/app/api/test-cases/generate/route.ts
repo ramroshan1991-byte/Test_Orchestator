@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     const testCases = await aiService.generateTestCases(storyData, testPlanScope);
     return NextResponse.json({ testCases });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Test Case Generation API Error:', error.message);
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
