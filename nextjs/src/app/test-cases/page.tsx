@@ -502,7 +502,7 @@ export default function TestCasesPage() {
                 <div className="bg-slate-800/50 p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
                    <h4 className="text-lg font-bold text-amber-400 mb-3 flex items-center gap-2">✏️ Custom Generator</h4>
                    <p className="text-sm text-slate-400 mb-8 flex-1 leading-relaxed">Describe a scenario and generate test cases instantly without a Jira connection.</p>
-                   <button onClick={() => setActiveGenerator('custom')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-amber-900/20">Open Generator →</button>
+                   <button onClick={() => setActiveTab('custom')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-amber-900/20">Open Generator →</button>
                 </div>
               </div>
             </div>
