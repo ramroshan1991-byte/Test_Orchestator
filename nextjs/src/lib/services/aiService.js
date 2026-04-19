@@ -320,7 +320,15 @@ Instructions: Generate test cases strictly based on the provided user story data
   async generateAutomationCode(testCase, framework, options) {
     let prompt = '';
 
-    if (framework === 'selenium-java') {
+    if (options.featureFileBDD) {
+      prompt = `Generate a standard Cucumber BDD Feature File for the following test case. 
+Format as a proper .feature file using Given/When/Then syntax, followed by the step definition code in ${framework}.
+Include: ${options.pageObjectModel ? 'Page Object Model implementation mapping to the steps,' : ''}
+${options.addAssertions ? 'assertions in the Then steps,' : ''}
+and ${options.addComments ? 'descriptive comments' : 'clean code'}.
+Test Case: ${JSON.stringify(testCase)}
+Return only the code (Feature file content followed by step definition implementation), no markdown blocks of explanation.`;
+    } else if (framework === 'selenium-java') {
       prompt = `Generate production-ready Selenium WebDriver code in Java using 
 TestNG and${options.pageObjectModel ? ' Page Object Model' : ''} for the following test case.
 Include: imports, ${options.pageObjectModel ? 'page class,' : ''} test class, 
@@ -330,7 +338,7 @@ Test Case: ${JSON.stringify(testCase)}
 Return only the Java code, no explanation.`;
     } else if (framework === 'playwright-js') {
       prompt = `Generate production-ready Playwright test code in JavaScript/TypeScript
-for the following test case.
+using ${options.pageObjectModel ? 'Page Object Model pattern ' : ''}for the following test case.
 Include: imports, page fixtures, locators, ${options.addAssertions ? 'assertions,' : ''}
 async/await pattern, and ${options.addComments ? 'descriptive test blocks' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}

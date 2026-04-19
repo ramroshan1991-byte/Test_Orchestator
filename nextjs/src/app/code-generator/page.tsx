@@ -77,7 +77,8 @@ export default function CodeGeneratorPage() {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [activeFrameworkTab, setActiveFrameworkTab] = useState('');
   const [options, setOptions] = useState({
-    pageObjectModel: false,
+    pageObjectModel: true,
+    featureFileBDD: false,
     addAssertions: true,
     addComments: true,
   });
@@ -87,10 +88,10 @@ export default function CodeGeneratorPage() {
 
   const testCaseOptions = testCasesArray.length > 0
     ? testCasesArray.map((tc) => ({
-        id: tc.id,
-        name: tc.id || `TC-UNKN`,
-        title: tc.name,
-        codeGenerated: codeHistory[tc.id!] !== undefined,
+        id: tc.tid || tc.id,
+        name: tc.tid || tc.id || `TC-UNKN`,
+        title: tc.scenario || tc.name,
+        codeGenerated: codeHistory[tc.tid || tc.id!] !== undefined,
       }))
     : [
         { id: 'demo-1', name: 'TC001', title: 'Verify successful payment processing', codeGenerated: false },
@@ -111,7 +112,8 @@ export default function CodeGeneratorPage() {
 
 
   const downloadCode = () => {
-    const ext = selectedFramework === 'selenium-java' ? 'java' : 'js';
+    const isBDD = options.featureFileBDD;
+    let ext = isBDD ? 'feature' : (selectedFramework === 'selenium-java' ? 'java' : 'js');
     const blob = new Blob([generatedCode], { type: 'text/plain' });
     triggerDownload(blob, getFilename(getPrefix('singlecase'), ext));
     showToast('Code downloaded!', 'success');
@@ -125,46 +127,40 @@ export default function CodeGeneratorPage() {
 
     setLoading(true);
     try {
-      // Mock code generation
-      const mockCode = `// Generated test code for ${selectedTestCase.name}
-// Framework: ${selectedFramework}
-${customPromptMode ? `// Custom Prompt: ${customPrompts.codeGen.substring(0, 50)}...` : ''}
-
-describe('Test: ${selectedTestCase.name}', () => {
-  ${options.pageObjectModel ? '// Page Object Model enabled' : ''}
-  ${options.addComments ? '// Auto-generated with comments' : ''}
-  
-  beforeEach(() => {
-    // Setup test
-  });
-
-  it('should perform the test', async () => {
-    ${options.addAssertions ? '// Assertions: ENABLED' : ''}
-    
-    // Test Steps
-    ${selectedTestCase.steps?.map((step, i) => `// Step ${i + 1}: ${step}`).join('\n    ')}
-    
-    // Expected Results
-    ${selectedTestCase.expectedResults?.map((result, i) => `// Result ${i + 1}: ${result}`).join('\n    ')}
-  });
-
-  afterEach(() => {
-    // Cleanup
-  });
-});`;
-
-      setGeneratedCode(mockCode);
+      // Setup payload including options
+      const payload = {
+        testCase: selectedTestCase,
+        framework: selectedFramework,
+        options: options
+      };
       
-      if (selectedTestCase.id) {
-        saveCodeToHistory(selectedTestCase.id, selectedFramework, mockCode);
+      const response = await fetch('/api/code/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.error || 'Failed to generate code');
+      
+      const codeOutput = data.code || 'No code generated.';
+
+      setGeneratedCode(codeOutput);
+      
+      const tcId = selectedTestCase.tid || selectedTestCase.id;
+      if (tcId) {
+        saveCodeToHistory(tcId, selectedFramework, codeOutput);
       }
 
       showToast('Code generated successfully!', 'success');
       setCurrentStep(4);
       
       // Auto-set active tab
-      if (codeHistory[selectedTestCase.id || '']) {
-        const frameworks = Object.keys(codeHistory[selectedTestCase.id || '']);
+      if (codeHistory[tcId || '']) {
+        const frameworks = Object.keys(codeHistory[tcId || '']);
         setActiveFrameworkTab(frameworks[0] || selectedFramework);
       }
     } catch (error) {

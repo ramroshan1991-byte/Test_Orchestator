@@ -83,7 +83,7 @@ export default function TestCasesPage() {
     try {
       const text = filteredCases
         .map((tc, idx) => {
-          return `${idx + 1}. [${tc.id}] ${tc.name}\n   Steps: ${tc.steps?.length || 0}\n   Priority: ${tc.priority}\n   Status: ${tc.status}`;
+          return `${idx + 1}. [${tc.tid || tc.id || 'undefined'}] ${tc.scenario || tc.name || 'undefined'}\n   Steps: ${(tc.test_steps || tc.steps)?.length || 0}\n   Priority: ${tc.priority}\n   Status: ${tc.status}`;
         })
         .join('\n\n');
 
