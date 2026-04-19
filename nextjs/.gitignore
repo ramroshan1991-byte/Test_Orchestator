@@ -39,3 +39,4 @@ yarn-error.log*
 
 # OS
 thumbs.db
+.vercel

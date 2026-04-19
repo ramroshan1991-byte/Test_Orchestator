@@ -98,3 +98,22 @@
  GET /jira-connect 200 in 72ms
  GET /jira-connect 200 in 114ms
  GET /test-plans 200 in 53ms
+ GET /test-plans 200 in 211ms
+ GET /code-generator 200 in 59ms
+ GET /test-cases 200 in 59ms
+ GET /code-generator 200 in 62ms
+ GET /test-plans 200 in 34ms
+ GET /code-generator 200 in 33ms
+ GET /jira-connect 200 in 32ms
+ ✓ Compiled in 936ms (552 modules)
+ ✓ Compiled in 402ms (566 modules)
+ ✓ Compiled in 193ms (566 modules)
+ ✓ Compiled in 372ms (1388 modules)
+ ✓ Compiled in 480ms (1388 modules)
+ ✓ Compiled in 560ms (1388 modules)
+ ✓ Compiled in 489ms (1388 modules)
+ ✓ Compiled in 114ms (566 modules)
+ ✓ Compiled in 172ms (1388 modules)
+ ✓ Compiled in 550ms (1388 modules)
+ ✓ Compiled in 512ms (1388 modules)
+ ✓ Compiled in 1321ms (1388 modules)
