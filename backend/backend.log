@@ -6992,3 +6992,2227 @@ Performing per-issue fallback fetch for up to 1 issues
 Mapped 1 stories from Jira (total issues fetched: 1)
 Fetched 1 stories from Jira
 Anthropic not configured — returning template-structured mock test plan
+Received /stories request with: {
+  projectKey: 'KAN',
+  baseURL: 'https://jirame91.atlassian.net/',
+  email: 'ramroshan1991@gmail.com',
+  apiToken: '***'
+}
+Fetching Jira stories with JQL: project = "KAN"
+Base URL: https://jirame91.atlassian.net
+API URL: https://jirame91.atlassian.net/rest/api/3/search/jql initial fetch
+Jira API response status: 200
+Jira Search Response Data: {
+  "issues": [
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10010",
+      "self": "https://jirame91.atlassian.net/rest/api/3/issue/10010",
+      "key": "KAN-1",
+      "fields": {
+        "summary": "User Login Functionality – SauceDemo",
+        "issuetype": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/issuetype/10008",
+          "id": "10008",
+          "description": "Created by Jira Agile - do not edit or delete. Issue type for a user story.",
+          "iconUrl": "https://jirame91.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10315?size=medium",
+          "name": "Story",
+          "subtask": false,
+          "avatarId": 10315,
+          "entityId": "09f24508-c896-4912-ac01-423939761956",
+          "hierarchyLevel": 0
+        },
+        "created": "2026-04-04T01:08:31.789+0530",
+        "duedate": "2026-04-08",
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 2,
+                "localId": "946a28f899b4"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧾 "
+                },
+                {
+                  "type": "text",
+                  "text": "User Story: Login to SauceDemo Application",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Title:",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " User Login Functionality – SauceDemo"
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "URL:",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                },
+                {
+                  "type": "inlineCard",
+                  "attrs": {
+                    "url": "https://www.saucedemo.com/",
+                    "localId": "0822ed58c359"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                }
+              ],
+              "attrs": {
+                "localId": "1223f0735b27"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "9a09f00c2612"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "40fab19055ae"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧑‍💻 "
+                },
+                {
+                  "type": "text",
+                  "text": "User Story",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "As a "
+                },
+                {
+                  "type": "text",
+                  "text": "registered user",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": ","
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "I want to "
+                },
+                {
+                  "type": "text",
+                  "text": "log in to the SauceDemo application using my username and password",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": ","
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "So that I can "
+                },
+                {
+                  "type": "text",
+                  "text": "access the products page and perform shopping-related actions",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "."
+                }
+              ],
+              "attrs": {
+                "localId": "46958c1d97be"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "f7b2d2be03b5"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "4f09970ec4e2"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🎯 "
+                },
+                {
+                  "type": "text",
+                  "text": "Acceptance Criteria",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "c8116feb24bf"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "✅ "
+                },
+                {
+                  "type": "text",
+                  "text": "Valid Login",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "0525caed5824"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user is on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ff7df89f7b95"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "8a826fe1e871"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "When the user enters a "
+                        },
+                        {
+                          "type": "text",
+                          "text": "valid username and password",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ef51e7185184"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "edfb5429686f"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And clicks on the "
+                        },
+                        {
+                          "type": "text",
+                          "text": "Login button",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "d8cf223c27aa"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "bf127fc488aa"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then the user should be "
+                        },
+                        {
+                          "type": "text",
+                          "text": "successfully redirected to the inventory (products) page",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "5204629e41a4"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "20bd0cd9a3ac"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "67e2bbd05719"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "9ccb2c57d199"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "❌ "
+                },
+                {
+                  "type": "text",
+                  "text": "Invalid Login",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "6bb0c369b2ee"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user is on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "cef69c258c91"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "7d28f3a66e16"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "When the user enters "
+                        },
+                        {
+                          "type": "text",
+                          "text": "invalid credentials",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "92314d710a5b"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "5c5bcebd4d01"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And clicks on Login"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "b867d9ae4de9"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "db221d1cbdec"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then an "
+                        },
+                        {
+                          "type": "text",
+                          "text": "error message should be displayed",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "f4320640e441"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "8d6f700c2cd0"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And the user should remain on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ee5c406b36f5"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "fa1785b4ded3"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "b3f403232735"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "2b2c9a52dfe3"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "⚠️ "
+                },
+                {
+                  "type": "text",
+                  "text": "Empty Fields Validation",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "3afe2aebfe4b"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If username is empty → Show: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Username is required”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "72542c11d1c0"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "bf17e9573835"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If password is empty → Show: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Password is required”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "86a743dead3e"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "fb5aa6b4604e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If both are empty → Show appropriate validation message"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "1bbf1f507724"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "0b2ef1e7711f"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "6b10c8734ac1"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "69f6d4fb8b2d"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🔒 "
+                },
+                {
+                  "type": "text",
+                  "text": "Locked User Scenario",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "20a68e7fd5c5"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user enters a "
+                        },
+                        {
+                          "type": "text",
+                          "text": "locked user credential",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "8c62b43086c1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "b1ea60c1eaa2"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then display error: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Sorry, this user has been locked out.”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "0eea61933887"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "929aa05a926d"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "eca236319dcc"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "cb57f07899d2"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧪 "
+                },
+                {
+                  "type": "text",
+                  "text": "Test Data (Example)",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "da7884bd722e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Standard User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "standard_user / secret_sauce",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "12bea10cf973"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "781253661a85"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Locked User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "locked_out_user / secret_sauce",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "37ff63b83dfd"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "aa1820e4da1e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Invalid User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "invalid_user / invalid_pass",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "62c01b7cb4b1"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "c6b44c9bcb1e"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "efba9dc3f289"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "029175c184e3"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧩 "
+                },
+                {
+                  "type": "text",
+                  "text": "Tasks / Subtasks",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "833898c1e544"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "UI Validation for login fields"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "787ab20f0115"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "a5fa64913918"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Functional testing for login scenarios"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "61f3195d5627"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "7c6940630a0f"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Negative testing (invalid/empty inputs)"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "10d3684fb921"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "66f9012a15f0"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Error message validation"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "e71ef8dcbbae"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "977f1caf7ff6"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Cross-browser testing"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "aa429e7c58c9"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "cc090c36321b"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "API validation (if applicable)"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "40a458f2457c"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "08e06c03c8db"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "db7eb4a06e0f"
+              }
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Test Data:"
+                }
+              ],
+              "attrs": {
+                "localId": "99ccecc995a5"
+              }
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Url: "
+                },
+                {
+                  "type": "inlineCard",
+                  "attrs": {
+                    "url": "https://www.saucedemo.com/",
+                    "localId": "04254c5988fb"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                }
+              ],
+              "attrs": {
+                "localId": "a795f1b0d0e8"
+              }
+            },
+            {
+              "type": "mediaSingle",
+              "attrs": {
+                "width": 682,
+                "widthType": "pixel",
+                "localId": "7e02cf408adc",
+                "layout": "align-start"
+              },
+              "content": [
+                {
+                  "type": "media",
+                  "attrs": {
+                    "type": "file",
+                    "id": "4431b6f4-c512-4150-8fbb-3aead0319bf5",
+                    "alt": "image-20260419-065447.png",
+                    "collection": "",
+                    "localId": "e08dffd97f63",
+                    "height": 258,
+                    "width": 843
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "assignee": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/user?accountId=712020%3A93f7df97-a8a4-40d3-a265-0c8b82120144",
+          "accountId": "712020:93f7df97-a8a4-40d3-a265-0c8b82120144",
+          "emailAddress": "ramroshan1991@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png"
+          },
+          "displayName": "Ram Roshan",
+          "active": true,
+          "timeZone": "Asia/Calcutta",
+          "accountType": "atlassian"
+        },
+        "customfield_10001": null,
+        "priority": null,
+        "updated": "2026-04-19T12:24:54.406+0530",
+        "status": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/status/10004",
+          "description": "",
+          "iconUrl": "https://jirame91.atlassian.net/images/icons/statuses/generic.png",
+          "name": "To Do",
+          "id": "10004",
+          "statusCategory": {
+            "self": "https://jirame91.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "To Do"
+          }
+        }
+      }
+    }
+  ],
+  "isLast": true
+}
+Performing per-issue fallback fetch for up to 1 issues
+Mapped 1 stories from Jira (total issues fetched: 1)
+Fetched 1 stories from Jira
+Received /stories request with: {
+  projectKey: 'KAN',
+  baseURL: 'https://jirame91.atlassian.net/',
+  email: 'ramroshan1991@gmail.com',
+  apiToken: '***'
+}
+Fetching Jira stories with JQL: project = "KAN"
+Base URL: https://jirame91.atlassian.net
+API URL: https://jirame91.atlassian.net/rest/api/3/search/jql initial fetch
+Jira API response status: 200
+Jira Search Response Data: {
+  "issues": [
+    {
+      "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+      "id": "10010",
+      "self": "https://jirame91.atlassian.net/rest/api/3/issue/10010",
+      "key": "KAN-1",
+      "fields": {
+        "summary": "User Login Functionality – SauceDemo",
+        "issuetype": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/issuetype/10008",
+          "id": "10008",
+          "description": "Created by Jira Agile - do not edit or delete. Issue type for a user story.",
+          "iconUrl": "https://jirame91.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10315?size=medium",
+          "name": "Story",
+          "subtask": false,
+          "avatarId": 10315,
+          "entityId": "09f24508-c896-4912-ac01-423939761956",
+          "hierarchyLevel": 0
+        },
+        "created": "2026-04-04T01:08:31.789+0530",
+        "duedate": "2026-04-08",
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 2,
+                "localId": "946a28f899b4"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧾 "
+                },
+                {
+                  "type": "text",
+                  "text": "User Story: Login to SauceDemo Application",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Title:",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " User Login Functionality – SauceDemo"
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "URL:",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                },
+                {
+                  "type": "inlineCard",
+                  "attrs": {
+                    "url": "https://www.saucedemo.com/",
+                    "localId": "0822ed58c359"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                }
+              ],
+              "attrs": {
+                "localId": "1223f0735b27"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "9a09f00c2612"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "40fab19055ae"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧑‍💻 "
+                },
+                {
+                  "type": "text",
+                  "text": "User Story",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "As a "
+                },
+                {
+                  "type": "text",
+                  "text": "registered user",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": ","
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "I want to "
+                },
+                {
+                  "type": "text",
+                  "text": "log in to the SauceDemo application using my username and password",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": ","
+                },
+                {
+                  "type": "hardBreak"
+                },
+                {
+                  "type": "text",
+                  "text": "So that I can "
+                },
+                {
+                  "type": "text",
+                  "text": "access the products page and perform shopping-related actions",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "."
+                }
+              ],
+              "attrs": {
+                "localId": "46958c1d97be"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "f7b2d2be03b5"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "4f09970ec4e2"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🎯 "
+                },
+                {
+                  "type": "text",
+                  "text": "Acceptance Criteria",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "c8116feb24bf"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "✅ "
+                },
+                {
+                  "type": "text",
+                  "text": "Valid Login",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "0525caed5824"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user is on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ff7df89f7b95"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "8a826fe1e871"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "When the user enters a "
+                        },
+                        {
+                          "type": "text",
+                          "text": "valid username and password",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ef51e7185184"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "edfb5429686f"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And clicks on the "
+                        },
+                        {
+                          "type": "text",
+                          "text": "Login button",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "d8cf223c27aa"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "bf127fc488aa"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then the user should be "
+                        },
+                        {
+                          "type": "text",
+                          "text": "successfully redirected to the inventory (products) page",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "5204629e41a4"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "20bd0cd9a3ac"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "67e2bbd05719"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "9ccb2c57d199"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "❌ "
+                },
+                {
+                  "type": "text",
+                  "text": "Invalid Login",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "6bb0c369b2ee"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user is on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "cef69c258c91"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "7d28f3a66e16"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "When the user enters "
+                        },
+                        {
+                          "type": "text",
+                          "text": "invalid credentials",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "92314d710a5b"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "5c5bcebd4d01"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And clicks on Login"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "b867d9ae4de9"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "db221d1cbdec"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then an "
+                        },
+                        {
+                          "type": "text",
+                          "text": "error message should be displayed",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "f4320640e441"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "8d6f700c2cd0"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "And the user should remain on the login page"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "ee5c406b36f5"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "fa1785b4ded3"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "b3f403232735"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "2b2c9a52dfe3"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "⚠️ "
+                },
+                {
+                  "type": "text",
+                  "text": "Empty Fields Validation",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "3afe2aebfe4b"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If username is empty → Show: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Username is required”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "72542c11d1c0"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "bf17e9573835"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If password is empty → Show: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Password is required”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "86a743dead3e"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "fb5aa6b4604e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "If both are empty → Show appropriate validation message"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "1bbf1f507724"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "0b2ef1e7711f"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "6b10c8734ac1"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 4,
+                "localId": "69f6d4fb8b2d"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🔒 "
+                },
+                {
+                  "type": "text",
+                  "text": "Locked User Scenario",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "20a68e7fd5c5"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Given the user enters a "
+                        },
+                        {
+                          "type": "text",
+                          "text": "locked user credential",
+                          "marks": [
+                            {
+                              "type": "strong"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "8c62b43086c1"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "b1ea60c1eaa2"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Then display error: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "“Sorry, this user has been locked out.”",
+                          "marks": [
+                            {
+                              "type": "em"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "0eea61933887"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "929aa05a926d"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "eca236319dcc"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "cb57f07899d2"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧪 "
+                },
+                {
+                  "type": "text",
+                  "text": "Test Data (Example)",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "da7884bd722e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Standard User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "standard_user / secret_sauce",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "12bea10cf973"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "781253661a85"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Locked User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "locked_out_user / secret_sauce",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "37ff63b83dfd"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "aa1820e4da1e"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Invalid User: "
+                        },
+                        {
+                          "type": "text",
+                          "text": "invalid_user / invalid_pass",
+                          "marks": [
+                            {
+                              "type": "code"
+                            }
+                          ]
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "62c01b7cb4b1"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "c6b44c9bcb1e"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "efba9dc3f289"
+              }
+            },
+            {
+              "type": "heading",
+              "attrs": {
+                "level": 3,
+                "localId": "029175c184e3"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "🧩 "
+                },
+                {
+                  "type": "text",
+                  "text": "Tasks / Subtasks",
+                  "marks": [
+                    {
+                      "type": "strong"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "833898c1e544"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "UI Validation for login fields"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "787ab20f0115"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "a5fa64913918"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Functional testing for login scenarios"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "61f3195d5627"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "7c6940630a0f"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Negative testing (invalid/empty inputs)"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "10d3684fb921"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "66f9012a15f0"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Error message validation"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "e71ef8dcbbae"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "977f1caf7ff6"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Cross-browser testing"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "aa429e7c58c9"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "localId": "cc090c36321b"
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "API validation (if applicable)"
+                        }
+                      ],
+                      "attrs": {
+                        "localId": "40a458f2457c"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "attrs": {
+                "localId": "08e06c03c8db"
+              }
+            },
+            {
+              "type": "rule",
+              "attrs": {
+                "localId": "db7eb4a06e0f"
+              }
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Test Data:"
+                }
+              ],
+              "attrs": {
+                "localId": "99ccecc995a5"
+              }
+            },
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Url: "
+                },
+                {
+                  "type": "inlineCard",
+                  "attrs": {
+                    "url": "https://www.saucedemo.com/",
+                    "localId": "04254c5988fb"
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " "
+                }
+              ],
+              "attrs": {
+                "localId": "a795f1b0d0e8"
+              }
+            },
+            {
+              "type": "mediaSingle",
+              "attrs": {
+                "width": 682,
+                "widthType": "pixel",
+                "localId": "7e02cf408adc",
+                "layout": "align-start"
+              },
+              "content": [
+                {
+                  "type": "media",
+                  "attrs": {
+                    "type": "file",
+                    "id": "4431b6f4-c512-4150-8fbb-3aead0319bf5",
+                    "alt": "image-20260419-065447.png",
+                    "collection": "",
+                    "localId": "e08dffd97f63",
+                    "height": 258,
+                    "width": 843
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "assignee": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/user?accountId=712020%3A93f7df97-a8a4-40d3-a265-0c8b82120144",
+          "accountId": "712020:93f7df97-a8a4-40d3-a265-0c8b82120144",
+          "emailAddress": "ramroshan1991@gmail.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "24x24": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "16x16": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png",
+            "32x32": "https://secure.gravatar.com/avatar/77d0fbc5a80c04fc2953ece0f95492af?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRR-5.png"
+          },
+          "displayName": "Ram Roshan",
+          "active": true,
+          "timeZone": "Asia/Calcutta",
+          "accountType": "atlassian"
+        },
+        "customfield_10001": null,
+        "priority": null,
+        "updated": "2026-04-19T12:24:54.406+0530",
+        "status": {
+          "self": "https://jirame91.atlassian.net/rest/api/3/status/10004",
+          "description": "",
+          "iconUrl": "https://jirame91.atlassian.net/images/icons/statuses/generic.png",
+          "name": "To Do",
+          "id": "10004",
+          "statusCategory": {
+            "self": "https://jirame91.atlassian.net/rest/api/3/statuscategory/2",
+            "id": 2,
+            "key": "new",
+            "colorName": "blue-gray",
+            "name": "To Do"
+          }
+        }
+      }
+    }
+  ],
+  "isLast": true
+}
+Performing per-issue fallback fetch for up to 1 issues
+Mapped 1 stories from Jira (total issues fetched: 1)
+Fetched 1 stories from Jira
+Anthropic not configured — returning template-structured mock test plan
+Custom Generator Detected: Attempting local AI query (Ollama gemma3:1b)...
