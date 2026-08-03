@@ -38,3 +38,7 @@ yarn-error.log*
 .vscode
 *.swp
 *.swo
+
+# Build artifacts and logs
+*.log
+*.tsbuildinfo

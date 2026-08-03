@@ -11,7 +11,9 @@ class APIClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000,
+      // Generation calls (plan, test cases, code) routinely run past 30s at
+      // 16k output tokens — the old 30s ceiling aborted them mid-flight.
+      timeout: 120000,
     });
 
     // Add response interceptor for error handling
@@ -60,14 +62,19 @@ class APIClient {
     }
   }
 
-  // Test Case Generation
-  // Preferred: call with (storyData, testPlanScope)
-  async generateTestCases(storyData: any, testPlanScope?: any, customPrompt?: string) {
+  // Test Case Generation — single batch.
+  // For a full run use generateTestCasesBatched() from lib/testCaseGeneration,
+  // which loops this endpoint until the target count is reached.
+  async generateTestCases(
+    storyData: any,
+    testPlanScope?: any,
+    batch?: { size?: number; index?: number; exclude?: string[] }
+  ) {
     try {
       const payload: any = {};
       if (storyData) payload.storyData = storyData;
       if (testPlanScope) payload.testPlanScope = testPlanScope;
-      if (customPrompt) payload.customPrompt = customPrompt;
+      if (batch) payload.batch = batch;
 
       const response = await this.client.post('/test-cases/generate', payload);
       return response.data;

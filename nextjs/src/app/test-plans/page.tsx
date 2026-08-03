@@ -11,6 +11,7 @@ import Sidebar from '@/components/Sidebar';
 import { ToastContainer, useToast } from '@/components/Toast';
 
 import { apiClient } from '@/lib/api-client';
+import { generateTestCasesBatched, type GenerationProgress } from '@/lib/testCaseGeneration';
 
 // STANDARDIZED DOWNLOAD HELPERS
 const getFilename = (prefix: string, extension: string, title?: string) => {
@@ -87,11 +88,13 @@ const CriteriaPair = ({ entryLabel, exitLabel, entry, exit }: { entryLabel: stri
 );
 
 export default function TestPlansPage() {
-  const { jiraStories, testPlans, setTestPlans, setTestCases } = useAppStore();
+  const { jiraStories, testPlans, setTestPlans, testCases, setTestCases } = useAppStore();
   const { showToast } = useToast();
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [generatingPlanId, setGeneratingPlanId] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState<number | null>(null);
+  const [generatingCasesFor, setGeneratingCasesFor] = useState<string | null>(null);
+  const [caseProgress, setCaseProgress] = useState<GenerationProgress | null>(null);
 
   const testPlansArray: any[] = useMemo(() => Object.values(testPlans || {}), [testPlans]);
 
@@ -127,19 +130,45 @@ export default function TestPlansPage() {
   };
 
   const handleGenerateTestCasesFromPlan = async (plan: any) => {
+    const storyKey = plan.storyKey || plan.storyId || null;
+    const planKey = String(plan.id || storyKey || Date.now());
+    setGeneratingCasesFor(planKey);
+    setCaseProgress(null);
     try {
-      showToast('Generating test cases...', 'info');
-      const storyKey = plan.storyKey || plan.storyId || null;
+      // Pass the full Jira story (description + acceptance criteria), not just the
+      // title — coverage depth is derived from what the story actually contains.
       const storyData = storyKey
         ? jiraStories.find((s) => s.key === storyKey) || { key: storyKey, summary: plan.storyTitle }
         : { key: null, summary: plan.storyTitle || plan.project_name };
-      const resp = await apiClient.generateTestCases(storyData, plan);
-      const testCases = resp?.testCases || resp;
-      if (!testCases) throw new Error('No test cases returned');
-      setTestCases({ [plan.id || storyKey || Date.now()]: testCases });
-      showToast(`Generated ${testCases.length} test cases`, 'success');
+
+      const result = await generateTestCasesBatched(
+        storyData,
+        plan,
+        { count: 'Auto (AI decides)' },
+        setCaseProgress
+      );
+
+      if (!result.testCases.length) throw new Error('No test cases returned');
+
+      const tagged = result.testCases.map((tc: any) => ({
+        ...tc,
+        source: storyKey || 'Plan',
+        id: tc.tid || tc.id,
+      }));
+
+      // Merge — replacing the map wiped every other story's cases.
+      setTestCases({ ...testCases, [planKey]: tagged });
+
+      if (result.shortfall) {
+        showToast(`Generated ${tagged.length} test cases. ${result.shortfall}`, 'warning');
+      } else {
+        showToast(`Generated ${tagged.length} test cases`, 'success');
+      }
     } catch (error) {
       showToast(`Error: ${error instanceof Error ? error.message : 'Unknown'}`, 'error');
+    } finally {
+      setGeneratingCasesFor(null);
+      setCaseProgress(null);
     }
   };
 
@@ -508,8 +537,17 @@ export default function TestPlansPage() {
                           <button onClick={() => handleExportPdf(plan)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-medium transition-colors">
                             <Download className="w-4 h-4" /> Export PDF
                           </button>
-                          <button onClick={() => handleGenerateTestCasesFromPlan(plan)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors ml-auto">
-                            <ClipboardList className="w-4 h-4" /> Generate Test Cases →
+                          <button
+                            onClick={() => handleGenerateTestCasesFromPlan(plan)}
+                            disabled={generatingCasesFor !== null}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors ml-auto"
+                          >
+                            <ClipboardList className="w-4 h-4" />
+                            {generatingCasesFor === planKey
+                              ? caseProgress
+                                ? `Generating… ${caseProgress.collected}/${caseProgress.target}`
+                                : 'Generating…'
+                              : 'Generate Test Cases →'}
                           </button>
                           <button onClick={() => handleDeletePlan(planKey)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-300 text-sm font-medium transition-colors">
                             <Trash2 className="w-4 h-4" /> Delete
