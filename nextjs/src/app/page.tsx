@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import { ToastContainer } from '@/components/Toast';
 import { useAppStore } from '@/store/appStore';
+import { ExecutionSummary } from '@/components/ExecutionSummary';
+import { StatusBadge, PriorityBadge } from '@/components/StatusBadge';
 import {
   Zap, TrendingUp, CheckCircle, Code, ArrowRight,
   ChevronRight, FileText, Bot, Activity
@@ -56,19 +58,19 @@ export default function Dashboard() {
 
   const getColorClasses = (color: string) => {
     switch (color) {
-      case 'blue': return 'from-blue-900/60 to-blue-800/40 border-blue-700/50 hover:border-blue-500';
-      case 'green': return 'from-green-900/60 to-green-800/40 border-green-700/50 hover:border-green-500';
-      case 'purple': return 'from-purple-900/60 to-purple-800/40 border-purple-700/50 hover:border-purple-500';
-      default: return 'from-slate-800 to-slate-700 border-slate-600';
+      case 'blue': return 'border-blue-500/40 hover:border-blue-500';
+      case 'green': return 'border-green-500/40 hover:border-green-500';
+      case 'purple': return 'border-purple-500/40 hover:border-purple-500';
+      default: return 'border-slate-600';
     }
   };
 
   const getIconBg = (color: string) => {
     switch (color) {
-      case 'blue': return 'bg-blue-500/20 text-blue-400';
-      case 'green': return 'bg-green-500/20 text-green-400';
-      case 'purple': return 'bg-purple-500/20 text-purple-400';
-      default: return 'bg-slate-600 text-slate-300';
+      case 'blue': return 'bg-blue-600 text-white';
+      case 'green': return 'bg-green-600 text-white';
+      case 'purple': return 'bg-purple-600 text-white';
+      default: return 'bg-slate-600 text-white';
     }
   };
 
@@ -85,10 +87,10 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
 
         {/* Header */}
-        <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-8 py-5">
+        <header className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-4 sm:px-8 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/30">
@@ -100,20 +102,19 @@ export default function Dashboard() {
               </div>
             </div>
             {/* AI Status Badge */}
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium ${
-              aiStatus?.hasApiKey
-                ? 'bg-green-900/30 border-green-700/50 text-green-300'
-                : 'bg-red-900/30 border-red-700/50 text-red-400'
-            }`}>
-              <span className={`w-2 h-2 rounded-full ${aiStatus?.hasApiKey ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            <div
+              className={`${aiStatus?.hasApiKey ? 'status-pass' : 'status-fail'} !px-4 !py-2 !text-sm`}
+              title={aiStatus?.hasApiKey ? 'An AI provider is configured' : 'No AI key configured — output will be mock data'}
+            >
+              <span className={`w-2 h-2 rounded-full bg-current ${aiStatus?.hasApiKey ? 'animate-pulse' : ''}`} />
               <Bot className="w-4 h-4" />
-              {aiStatus ? aiStatus.activeProvider : 'Checking AI...'}
+              {aiStatus ? aiStatus.activeProvider : 'Checking AI…'}
             </div>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
 
           {/* Stats Cards — Clicking navigates to the page */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +122,7 @@ export default function Dashboard() {
               <button
                 key={stat.title}
                 onClick={() => router.push(stat.href)}
-                className={`bg-gradient-to-br ${getColorClasses(stat.color)} border rounded-xl p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}
+                className={`bg-slate-800 ${getColorClasses(stat.color)} border rounded-xl p-6 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg group cursor-pointer`}
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getIconBg(stat.color)}`}>
@@ -129,12 +130,16 @@ export default function Dashboard() {
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:translate-x-1 transition-all duration-200" />
                 </div>
-                <p className="text-4xl font-bold text-white mb-1">{stat.value}</p>
+                <p className="text-4xl font-bold text-slate-100 mb-1 tabular-nums">{stat.value}</p>
                 <p className="text-slate-300 font-medium text-sm">{stat.title}</p>
                 <p className="text-slate-500 text-xs mt-1">{stat.description}</p>
               </button>
             ))}
           </div>
+
+          {/* Execution readout — the headline number for a QA tool is the
+              verdict split, not how many cases were generated. */}
+          <ExecutionSummary cases={testCaseList} compact />
 
           {/* Two column layout: Workflow + Recent Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -236,12 +241,6 @@ export default function Dashboard() {
                 {recentTestCases.map((tc: any, i: number) => {
                   const tcId = tc.tid || tc.id || `TC-${i + 1}`;
                   const tcName = tc.scenario || tc.name || 'Test Case';
-                  const priority = tc.priority || 'Medium';
-                  const priorityColor =
-                    priority === 'Critical' ? 'text-red-400 bg-red-900/30 border-red-800/40' :
-                    priority === 'High' ? 'text-orange-400 bg-orange-900/30 border-orange-800/40' :
-                    'text-yellow-400 bg-yellow-900/30 border-yellow-800/40';
-
                   return (
                     <button
                       key={i}
@@ -254,11 +253,9 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="font-mono text-xs text-blue-400 mb-1">{tcId}</p>
                         <p className="text-slate-200 text-sm font-medium truncate leading-snug">{tcName}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priorityColor}`}>
-                            {priority}
-                          </span>
-                          <span className="text-xs text-slate-500">{tc.status || 'Not Executed'}</span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <PriorityBadge priority={tc.priority} />
+                          <StatusBadge status={tc.status} />
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-300 self-center flex-shrink-0 transition-colors" />

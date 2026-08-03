@@ -71,6 +71,11 @@ interface AppStore {
   // Actions
   setTestPlans: (plans: { [key: string]: TestPlan }) => void;
   setTestCases: (cases: { [key: string]: TestCase[] }) => void;
+  /** Record an execution result against one case, wherever it lives. */
+  updateTestCase: (caseId: string, patch: Record<string, any>) => void;
+  /** Apply the same patch to many cases (bulk mark pass/fail/blocked). */
+  updateTestCases: (caseIds: string[], patch: Record<string, any>) => void;
+  deleteTestCases: (caseIds: string[]) => void;
   setJiraStories: (stories: JiraStory[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -110,6 +115,41 @@ export const useAppStore = create<AppStore>()(
       // Actions
       setTestPlans: (plans) => set({ testPlans: plans }),
       setTestCases: (cases) => set({ testCases: cases }),
+
+      // Cases are stored grouped by plan/source key, so an edit has to find the
+      // owning group rather than index a flat list.
+      updateTestCase: (caseId, patch) => {
+        const groups = get().testCases || {};
+        const next: { [key: string]: any[] } = {};
+        for (const [key, list] of Object.entries(groups)) {
+          next[key] = (list as any[]).map((tc) =>
+            (tc.tid || tc.id) === caseId ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
+          );
+        }
+        set({ testCases: next as any });
+      },
+
+      updateTestCases: (caseIds, patch) => {
+        const ids = new Set(caseIds);
+        const groups = get().testCases || {};
+        const next: { [key: string]: any[] } = {};
+        for (const [key, list] of Object.entries(groups)) {
+          next[key] = (list as any[]).map((tc) =>
+            ids.has(tc.tid || tc.id) ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
+          );
+        }
+        set({ testCases: next as any });
+      },
+
+      deleteTestCases: (caseIds) => {
+        const ids = new Set(caseIds);
+        const groups = get().testCases || {};
+        const next: { [key: string]: any[] } = {};
+        for (const [key, list] of Object.entries(groups)) {
+          next[key] = (list as any[]).filter((tc) => !ids.has(tc.tid || tc.id));
+        }
+        set({ testCases: next as any });
+      },
       setJiraStories: (stories) => set({ jiraStories: stories }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),

@@ -1,7 +1,20 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Download, Copy, ChevronLeft, ChevronRight, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Search,
+  Download,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  X,
+  Rows3,
+  List,
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -10,8 +23,17 @@ import Sidebar from '@/components/Sidebar';
 import { ToastContainer, useToast } from '@/components/Toast';
 import CustomGenerator from './CustomGenerator';
 import { useRouter } from 'next/navigation';
+import {
+  StatusBadge,
+  PriorityBadge,
+  AutomatedBadge,
+  SourceBadge,
+  normalizeStatus,
+  STATUSES,
+} from '@/components/StatusBadge';
+import { ExecutionSummary } from '@/components/ExecutionSummary';
 
-const ITEMS_PER_PAGE = 5;
+const PAGE_SIZES = [10, 25, 50, 100];
 
 // STANDARDIZED DOWNLOAD HELPERS
 const getFilename = (prefix: string, extension: string) => {
@@ -45,13 +67,22 @@ const triggerDownload = (blob: Blob, filename: string) => {
 };
 
 export default function TestCasesPage() {
-  const { testCases: storeTestCases } = useAppStore();
+  const {
+    testCases: storeTestCases,
+    updateTestCase,
+    updateTestCases,
+    deleteTestCases,
+  } = useAppStore();
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [filterPriority, setFilterPriority] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'plan' | 'custom'>('plan');
+  const [dense, setDense] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   // Plan-generated cases: all keys EXCEPT 'custom_gen'
@@ -71,30 +102,81 @@ export default function TestCasesPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, filterPriority, pageSize, activeTab]);
 
-  const filteredCases = testCasesArray.filter((tc: any) => {
-    const id = tc.id || tc.tid || '';
-    const name = tc.name || tc.scenario || '';
-    const matchSearch =
-      (id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Handle both old and new status cases natively
-    const tcStatus = tc.status || 'Not Executed';
-    const matchStatus = filterStatus === 'All' || tcStatus === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  const filteredCases = useMemo(
+    () =>
+      testCasesArray.filter((tc: any) => {
+        const haystack = [tc.id, tc.tid, tc.name, tc.scenario, tc.testcase_description]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        const matchSearch = !searchTerm || haystack.includes(searchTerm.toLowerCase());
+        // Compare on the normalised status — the store held three different
+        // spellings, so a raw equality check silently matched nothing.
+        const matchStatus = filterStatus === 'All' || normalizeStatus(tc.status) === filterStatus;
+        const matchPriority =
+          filterPriority === 'All' ||
+          String(tc.priority || 'Medium').toLowerCase() === filterPriority.toLowerCase();
+        return matchSearch && matchStatus && matchPriority;
+      }),
+    [testCasesArray, searchTerm, filterStatus, filterPriority]
+  );
 
-  const totalPages = Math.ceil(filteredCases.length / ITEMS_PER_PAGE);
-  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedCases = filteredCases.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * pageSize;
+  const paginatedCases = filteredCases.slice(startIdx, startIdx + pageSize);
+
+  const caseId = (tc: any) => tc.tid || tc.id;
+  const pageIds = paginatedCases.map(caseId);
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleSelectPage = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) pageIds.forEach((id) => next.delete(id));
+      else pageIds.forEach((id) => next.add(id));
+      return next;
+    });
+
+  // Record a verdict. This is what makes the tool usable as a test runner
+  // rather than a generator — status/actual_result/executed_qa_name existed in
+  // the schema and the filter, but nothing could ever set them.
+  const setStatus = (id: string, status: string) => {
+    updateTestCase(id, { status });
+    showToast(`${id} marked ${status}`, status === 'Failed' ? 'error' : 'success');
+  };
+
+  const bulkSet = (status: string) => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    updateTestCases(ids, { status });
+    showToast(`${ids.length} case(s) marked ${status}`, 'success');
+    setSelected(new Set());
+  };
+
+  const bulkDelete = () => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} test case(s)? This cannot be undone.`)) return;
+    deleteTestCases(ids);
+    showToast(`${ids.length} case(s) deleted`, 'info');
+    setSelected(new Set());
+  };
 
   const handleCopy = async () => {
     try {
       const text = filteredCases
         .map((tc, idx) => {
-          return `${idx + 1}. [${tc.tid || tc.id || 'undefined'}] ${tc.scenario || tc.name || 'undefined'}\n   Steps: ${(tc.test_steps || tc.steps)?.length || 0}\n   Priority: ${tc.priority}\n   Status: ${tc.status}`;
+          return `${idx + 1}. [${tc.tid || tc.id || 'undefined'}] ${tc.scenario || tc.name || 'undefined'}\n   Steps: ${(tc.test_steps || tc.steps)?.length || 0}\n   Priority: ${tc.priority}\n   Status: ${normalizeStatus(tc.status)}`;
         })
         .join('\n\n');
 
@@ -104,8 +186,6 @@ export default function TestCasesPage() {
       showToast('Failed to copy', 'error');
     }
   };
-
-
 
   const handleExportXlsx = () => {
     try {
@@ -117,7 +197,7 @@ export default function TestCasesPage() {
         'TestSteps': (tc.test_steps || tc.steps || []).join('\n') || '',
         'Expected Result': tc.expected_result || (tc.expectedResults || []).join('\n') || '',
         'Actual Result': tc.actual_result || tc.actualResult || '',
-        'Status': tc.status || 'Not Executed',
+        'Status': normalizeStatus(tc.status),
         'Executed QA Name': tc.executed_qa_name || tc.executedQaName || '',
         'Misc (Comments)': tc.misc_comments || '',
         'Priority': tc.priority || '',
@@ -125,11 +205,11 @@ export default function TestCasesPage() {
       }));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Test Cases');
-      
+
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const xlsxBlob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       triggerDownload(xlsxBlob, getFilename(getPrefix('testcases'), 'xlsx'));
-      
+
       showToast('XLSX downloaded!', 'success');
     } catch { showToast('Export XLSX failed', 'error'); }
   };
@@ -142,7 +222,7 @@ export default function TestCasesPage() {
         tc.tid || tc.id || '',
         tc.scenario || tc.name || '',
         tc.priority || '',
-        tc.status || 'Not Executed',
+        normalizeStatus(tc.status),
         tc.is_automated || (tc.isAutomated ? 'Yes' : 'No')
       ]);
       const anyAutoTable = autoTable as any;
@@ -151,10 +231,10 @@ export default function TestCasesPage() {
         head: [['TID', 'Scenario', 'Priority', 'Status', 'Automated']],
         body
       });
-      
+
       const pdfBlob = doc.output('blob');
       triggerDownload(pdfBlob, getFilename(getPrefix('testcases'), 'pdf'));
-      
+
       showToast('PDF downloaded!', 'success');
     } catch { showToast('Export PDF failed', 'error'); }
   };
@@ -164,65 +244,36 @@ export default function TestCasesPage() {
       const dataStr = JSON.stringify(filteredCases, null, 2);
       const jsonBlob = new Blob([dataStr], { type: 'application/json' });
       triggerDownload(jsonBlob, getFilename(getPrefix('testcases'), 'json'));
-      
+
       showToast('JSON downloaded!', 'success');
     } catch (error) {
       showToast('Export failed', 'error');
     }
   };
 
-  const getPriorityColor = (priority?: string) => {
-    switch (priority?.toLowerCase()) {
-      case 'critical':
-        return 'text-red-400';
-      case 'high':
-        return 'text-orange-400';
-      case 'medium':
-        return 'text-yellow-400';
-      case 'low':
-        return 'text-blue-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-900/30 text-green-300 border-green-600';
-      case 'in progress':
-      case 'in_progress':
-        return 'bg-blue-900/30 text-blue-300 border-blue-600';
-      case 'blocked':
-        return 'bg-red-900/30 text-red-300 border-red-600';
-      default:
-        return 'bg-slate-700 text-slate-300 border-slate-600';
-    }
-  };
-
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
-          <h1 className="text-3xl font-bold text-slate-100 mb-1">Test Cases</h1>
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-1">Test Cases</h1>
           <p className="text-slate-400 text-sm">
             {activeTab === 'plan'
-              ? `${filteredCases.length} test case${filteredCases.length !== 1 ? 's' : ''} from Test Plans`
-              : `${filteredCases.length} custom test case${filteredCases.length !== 1 ? 's' : ''}`
+              ? `${filteredCases.length} of ${planTestCases.length} test case${planTestCases.length !== 1 ? 's' : ''} from Test Plans`
+              : `${filteredCases.length} of ${customTestCases.length} custom test case${customTestCases.length !== 1 ? 's' : ''}`
             }
           </p>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-5">
+
           {/* Source Tabs */}
-          <div className="flex gap-0 mb-6 bg-slate-800/60 border border-slate-700 rounded-xl p-1 w-fit">
+          <div className="flex gap-0 bg-slate-800/60 border border-slate-700 rounded-xl p-1 w-full sm:w-fit overflow-x-auto">
             <button
-              onClick={() => { setActiveTab('plan'); setCurrentPage(1); setSearchTerm(''); }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              onClick={() => { setActiveTab('plan'); setSelected(new Set()); setSearchTerm(''); }}
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                 activeTab === 'plan'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -234,8 +285,8 @@ export default function TestCasesPage() {
               }`}>{planTestCases.length}</span>
             </button>
             <button
-              onClick={() => { setActiveTab('custom'); setCurrentPage(1); setSearchTerm(''); }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              onClick={() => { setActiveTab('custom'); setSelected(new Set()); setSearchTerm(''); }}
+              className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                 activeTab === 'custom'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
                   : 'text-slate-400 hover:text-slate-200'
@@ -249,236 +300,339 @@ export default function TestCasesPage() {
           </div>
 
           {/* Custom Generator Form — only shown on Custom tab */}
-          {activeTab === 'custom' && (
-            <div className="mb-6">
-              <CustomGenerator onGenerateSuccess={() => {}} />
-            </div>
-          )}
+          {activeTab === 'custom' && <CustomGenerator onGenerateSuccess={() => {}} />}
+
+          {/* Execution readout */}
+          <ExecutionSummary cases={testCasesArray} />
 
           {/* Search & Filter Bar */}
-          <div className="card p-4 mb-6 space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <div className="card p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search test cases..."
+                  placeholder="Search by ID, scenario or description…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10"
+                  className="input pl-9"
+                  aria-label="Search test cases"
                 />
               </div>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="input w-48"
+                className="input sm:w-44"
+                aria-label="Filter by status"
               >
-                <option>All</option>
-                <option>Not Executed</option>
-                <option>Not Started</option>
-                <option>In Progress</option>
-                <option>Completed</option>
-                <option>Blocked</option>
+                <option value="All">All statuses</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                className="input sm:w-40"
+                aria-label="Filter by priority"
+              >
+                <option value="All">All priorities</option>
+                {['Critical', 'High', 'Medium', 'Low'].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
               </select>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors"
-              >
-                <Copy className="w-4 h-4" />
-                Copy
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={handleCopy} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors">
+                <Copy className="w-4 h-4" /> Copy
               </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors"
-              >
-                <FileText className="w-4 h-4" />
-                JSON
+              <button onClick={handleExport} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors">
+                <FileText className="w-4 h-4" /> JSON
               </button>
-              <button
-                onClick={handleExportXlsx}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-slate-200 text-sm transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                XLSX
+              <button onClick={handleExportXlsx} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white text-sm transition-colors">
+                <Download className="w-4 h-4" /> XLSX
               </button>
-              <button
-                onClick={handleExportPdf}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-slate-200 text-sm transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                PDF
+              <button onClick={handleExportPdf} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm transition-colors">
+                <Download className="w-4 h-4" /> PDF
               </button>
+
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => setDense((d) => !d)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors"
+                  title={dense ? 'Switch to comfortable rows' : 'Switch to compact rows'}
+                >
+                  {dense ? <Rows3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                  {dense ? 'Comfortable' : 'Compact'}
+                </button>
+                <label className="flex items-center gap-2 text-sm text-slate-400">
+                  Rows
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
+                    className="input w-20 py-1.5"
+                    aria-label="Rows per page"
+                  >
+                    {PAGE_SIZES.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
 
+          {/* Bulk action bar — only while something is selected */}
+          {selected.size > 0 && (
+            <div className="sticky top-0 z-20 card p-3 flex flex-wrap items-center gap-2 border-blue-600/60 shadow-lg">
+              <span className="text-sm font-medium text-slate-200">
+                {selected.size} selected
+              </span>
+              <div className="flex flex-wrap items-center gap-2 ml-auto">
+                <span className="text-xs text-slate-400 hidden sm:inline">Mark as</span>
+                {(['Passed', 'Failed', 'Blocked', 'Not Executed'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => bulkSet(s)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 text-xs font-medium transition-colors"
+                  >
+                    {s}
+                  </button>
+                ))}
+                <button
+                  onClick={bulkDelete}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-900/40 hover:bg-red-900/60 text-red-300 text-xs font-medium transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+                <button
+                  onClick={() => setSelected(new Set())}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700"
+                  aria-label="Clear selection"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Test Cases List */}
           {paginatedCases.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
+              {/* Select-all for the current page */}
+              <label className="flex items-center gap-2 px-1 text-xs text-slate-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={toggleSelectPage}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                Select all {pageIds.length} on this page
+              </label>
+
               {paginatedCases.map((tc: any) => {
-                const tcId = tc.id || tc.tid;
+                const tcId = caseId(tc);
                 const isExpanded = expandedId === tcId;
-                
+                const isSelected = selected.has(tcId);
+                const steps = tc.steps || tc.test_steps || [];
+
                 return (
-                <div 
-                  key={tcId} 
-                  className={`card-hover p-0 cursor-pointer transition-all duration-300 overflow-hidden ${isExpanded ? 'ring-2 ring-blue-500 bg-slate-800/80' : ''}`}
-                  onClick={() => setExpandedId(isExpanded ? null : tcId)}
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-blue-400 font-bold">{tcId}</span>
-                          {tc.source === 'Custom' ? (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-amber-900/30 text-amber-400 border border-amber-700/50">
-                              ✏️ Custom
-                            </span>
-                          ) : tc.source ? (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-700/50">
-                              🔗 {tc.source}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-900/30 text-purple-400 border border-purple-700/50">
-                              📋 Plan
-                            </span>
+                  <div
+                    key={tcId}
+                    className={`card-hover overflow-hidden transition-all ${
+                      isSelected ? 'ring-2 ring-blue-500/70' : ''
+                    } ${isExpanded ? 'ring-2 ring-blue-500' : ''}`}
+                  >
+                    <div className={dense ? 'p-3' : 'p-4 sm:p-5'}>
+                      {/* Row head */}
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(tcId)}
+                          className="mt-1 w-4 h-4 accent-blue-600 shrink-0"
+                          aria-label={`Select ${tcId}`}
+                        />
+
+                        <button
+                          className="flex-1 min-w-0 text-left"
+                          onClick={() => setExpandedId(isExpanded ? null : tcId)}
+                          aria-expanded={isExpanded}
+                        >
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                            <span className="font-mono text-blue-400 font-bold text-sm">{tcId}</span>
+                            <StatusBadge status={tc.status} />
+                            <PriorityBadge priority={tc.priority} />
+                            <AutomatedBadge value={tc.is_automated ?? tc.isAutomated} />
+                            <SourceBadge source={tc.source} />
+                          </div>
+                          <h3 className={`font-semibold text-slate-100 ${dense ? 'text-sm' : 'text-base'}`}>
+                            {tc.name || tc.scenario}
+                          </h3>
+                          {!dense && (tc.description || tc.testcase_description) && (
+                            <p className="text-slate-400 text-sm mt-1 line-clamp-2">
+                              {tc.description || tc.testcase_description}
+                            </p>
                           )}
-                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(tc.status || 'Not Executed')}`}>
-                            {tc.status || 'Not Executed'}
-                          </span>
-                          {(tc.is_automated === 'Yes' || tc.isAutomated) && (
-                            <span className="px-2 py-1 rounded text-xs font-medium border bg-slate-800 text-purple-400 border-purple-500/50">
-                              Automated
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-100 mt-2">{tc.name || tc.scenario}</h3>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className={`text-sm font-medium ${getPriorityColor(tc.priority)}`}>
-                          {tc.priority || 'Medium'}
-                        </span>
-                        {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                      </div>
-                    </div>
+                        </button>
 
-                    {(tc.description || tc.testcase_description) && (
-                      <p className="text-slate-400 text-sm mb-3">{tc.description || tc.testcase_description}</p>
-                    )}
-
-                    {!isExpanded ? (
-                      // COLLAPSED VIEW
-                      (tc.steps || tc.test_steps) && (tc.steps || tc.test_steps).length > 0 && (
-                        <div className="mb-3">
-                          <ol className="space-y-1 text-sm text-slate-300">
-                            {(tc.steps || tc.test_steps).slice(0, 2).map((step: string, i: number) => (
-                              <li key={i} className="ml-4 list-decimal">{step.replace(/^\d+\.\s*/, '')}</li>
-                            ))}
-                            {(tc.steps || tc.test_steps).length > 2 && (
-                              <li className="ml-4 text-slate-500 list-none mt-1">
-                                +{(tc.steps || tc.test_steps).length - 2} more steps
-                              </li>
-                            )}
-                          </ol>
-                        </div>
-                      )
-                    ) : (
-                      // EXPANDED VIEW
-                      <div className="mt-6 space-y-6 border-t border-slate-700/50 pt-6 cursor-default" onClick={e => e.stopPropagation()}>
-                        {(tc.precondition || (tc.preconditions && tc.preconditions.length > 0)) && (
-                          <div>
-                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preconditions</h4>
-                            <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-800">
-                              {tc.precondition || (tc.preconditions || []).join(', ')}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Test Steps</h4>
-                            <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 h-full">
-                              <ol className="space-y-3 text-sm text-slate-300 list-decimal ml-4">
-                                {(tc.steps || tc.test_steps || []).map((step: string, i: number) => (
-                                  <li key={i} className="pl-1 leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</li>
-                                ))}
-                              </ol>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Expected Result</h4>
-                              <div className="bg-green-950/20 p-3 rounded-lg text-sm text-green-200/90 border border-green-900/30">
-                                {tc.expected_result || tc.expectedResult || (tc.expectedResults || []).join('\n')}
-                              </div>
-                            </div>
-                            {(tc.actual_result || tc.actualResult || tc.status !== 'Not Executed') && (
-                              <div>
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Actual Result</h4>
-                                <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-800">
-                                  {tc.actual_result || tc.actualResult || 'Awaiting execution results...'}
-                                </div>
-                              </div>
-                            )}
-                            {(tc.misc_comments) && (
-                              <div>
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Comments</h4>
-                                <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-400 italic border border-slate-800">
-                                  {tc.misc_comments}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {tc.executed_qa_name && (
-                          <div className="text-xs font-medium text-slate-500 text-right pt-2">
-                            Executed by: <span className="text-slate-400">{tc.executed_qa_name || tc.executedQaName}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {tc.tags && tc.tags.length > 0 && (
-                      <div className="flex gap-2 flex-wrap mt-4">
-                        {tc.tags.map((tag: string) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-1 rounded-full text-xs bg-slate-700 text-slate-300"
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* Inline verdict — one click to record a result */}
+                          <select
+                            value={normalizeStatus(tc.status)}
+                            onChange={(e) => setStatus(tcId, e.target.value)}
+                            className="input w-32 py-1.5 text-xs hidden sm:block"
+                            aria-label={`Set status for ${tcId}`}
                           >
-                            {tag}
-                          </span>
-                        ))}
+                            {STATUSES.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setExpandedId(isExpanded ? null : tcId)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-700"
+                            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                          >
+                            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                          </button>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Collapsed step peek — skipped in compact mode */}
+                      {!isExpanded && !dense && steps.length > 0 && (
+                        <ol className="mt-3 ml-8 space-y-1 text-sm text-slate-300 list-decimal">
+                          {steps.slice(0, 2).map((step: string, i: number) => (
+                            <li key={i} className="ml-2">{step.replace(/^\d+\.\s*/, '')}</li>
+                          ))}
+                          {steps.length > 2 && (
+                            <li className="ml-2 list-none text-slate-500">+{steps.length - 2} more steps</li>
+                          )}
+                        </ol>
+                      )}
+
+                      {/* EXPANDED */}
+                      {isExpanded && (
+                        <div className="mt-5 space-y-5 border-t border-slate-700/60 pt-5">
+                          {(tc.precondition || (tc.preconditions && tc.preconditions.length > 0)) && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Preconditions</h4>
+                              <div className="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 border border-slate-700">
+                                {tc.precondition || (tc.preconditions || []).join(', ')}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Test Steps</h4>
+                              <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 h-full">
+                                <ol className="space-y-2.5 text-sm text-slate-300 list-decimal ml-4">
+                                  {steps.map((step: string, i: number) => (
+                                    <li key={i} className="pl-1 leading-relaxed">{step.replace(/^\d+\.\s*/, '')}</li>
+                                  ))}
+                                </ol>
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Expected Result</h4>
+                                <div className="p-3 rounded-lg text-sm border status-pass !block">
+                                  {tc.expected_result || tc.expectedResult || (tc.expectedResults || []).join('\n')}
+                                </div>
+                              </div>
+
+                              {/* Actual result is now editable — this is the field a
+                                  tester fills in while running the case. */}
+                              <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                  Actual Result
+                                </label>
+                                <textarea
+                                  value={tc.actual_result || tc.actualResult || ''}
+                                  onChange={(e) => updateTestCase(tcId, { actual_result: e.target.value })}
+                                  placeholder="What actually happened? Paste errors or observations here."
+                                  rows={3}
+                                  className="input resize-y text-sm"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                    Executed By
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tc.executed_qa_name || tc.executedQaName || ''}
+                                    onChange={(e) => updateTestCase(tcId, { executed_qa_name: e.target.value })}
+                                    placeholder="QA name"
+                                    className="input text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                    Status
+                                  </label>
+                                  <select
+                                    value={normalizeStatus(tc.status)}
+                                    onChange={(e) => setStatus(tcId, e.target.value)}
+                                    className="input text-sm"
+                                  >
+                                    {STATUSES.map((s) => (
+                                      <option key={s} value={s}>{s}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                  Comments
+                                </label>
+                                <textarea
+                                  value={tc.misc_comments || ''}
+                                  onChange={(e) => updateTestCase(tcId, { misc_comments: e.target.value })}
+                                  placeholder="Notes, defect links, environment details…"
+                                  rows={2}
+                                  className="input resize-y text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )})}
+                );
+              })}
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
-                  <p className="text-sm text-slate-400">
-                    Page {currentPage} of {totalPages}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <p className="text-sm text-slate-400 tabular-nums">
+                    Showing {startIdx + 1}–{Math.min(startIdx + pageSize, filteredCases.length)} of{' '}
+                    {filteredCases.length}
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-50 transition-colors"
+                      onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+                      disabled={safePage === 1}
+                      className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40 transition-colors"
+                      aria-label="Previous page"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
+                    <span className="text-sm text-slate-300 tabular-nums px-1">
+                      {safePage} / {totalPages}
+                    </span>
                     <button
-                      onClick={() =>
-                        setCurrentPage(Math.min(totalPages, currentPage + 1))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-50 transition-colors"
+                      onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+                      disabled={safePage === totalPages}
+                      className="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-40 transition-colors"
+                      aria-label="Next page"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -486,20 +640,36 @@ export default function TestCasesPage() {
                 </div>
               )}
             </div>
+          ) : testCasesArray.length > 0 ? (
+            // Filters excluded everything — distinct from having no cases at all.
+            <div className="card p-10 text-center">
+              <Search className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-slate-100 mb-1">No matches</h3>
+              <p className="text-slate-400 text-sm mb-4">
+                {testCasesArray.length} case{testCasesArray.length !== 1 ? 's' : ''} exist, but none match the current filters.
+              </p>
+              <button
+                onClick={() => { setSearchTerm(''); setFilterStatus('All'); setFilterPriority('All'); }}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-sm font-medium"
+              >
+                Clear filters
+              </button>
+            </div>
           ) : (
-            <div className="card p-12 text-center max-w-4xl mx-auto mt-8">
+            <div className="card p-8 sm:p-12 text-center max-w-4xl mx-auto">
               <div className="mb-8">
                 <span className="text-4xl block mb-4">📋</span>
                 <h3 className="text-2xl font-bold text-slate-100 mb-2">No Test Cases Yet</h3>
                 <p className="text-slate-400">Generate test cases using one of these methods:</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                <div className="bg-slate-800/50 p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
+                <div className="bg-slate-800/50 p-6 sm:p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
                   <h4 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">🔗 From Jira</h4>
                   <p className="text-sm text-slate-400 mb-8 flex-1 leading-relaxed">Fetch user stories from Jira and auto-generate test cases via test plan context.</p>
-                  <button onClick={() => router.push('/dashboard')} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors">Go to Jira →</button>
+                  {/* Was /dashboard, which 404s — the route is /jira-connect. */}
+                  <button onClick={() => router.push('/jira-connect')} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors">Go to Jira →</button>
                 </div>
-                <div className="bg-slate-800/50 p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
+                <div className="bg-slate-800/50 p-6 sm:p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
                    <h4 className="text-lg font-bold text-amber-400 mb-3 flex items-center gap-2">✏️ Custom Generator</h4>
                    <p className="text-sm text-slate-400 mb-8 flex-1 leading-relaxed">Describe a scenario and generate test cases instantly without a Jira connection.</p>
                    <button onClick={() => setActiveTab('custom')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-amber-900/20">Open Generator →</button>

@@ -183,9 +183,9 @@ export default function CodeGeneratorPage() {
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
             <Code2 className="w-8 h-8 text-green-400" />
             <h1 className="text-3xl font-bold text-slate-100">Code Generator</h1>
@@ -194,7 +194,7 @@ export default function CodeGeneratorPage() {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
           {/* Step Indicator */}
           <div className="mb-8 flex items-center justify-between">
             {[1, 2, 3, 4].map((step) => (

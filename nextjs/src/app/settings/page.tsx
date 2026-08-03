@@ -63,9 +63,9 @@ export default function SettingsPage() {
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6 sticky top-0 z-10">
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <SettingsIcon className="w-8 h-8 text-blue-400" />
@@ -87,7 +87,7 @@ export default function SettingsPage() {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
           <div className="max-w-4xl space-y-6">
             {/* API Configuration */}
             <div className="card p-6">
