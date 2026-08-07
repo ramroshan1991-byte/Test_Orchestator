@@ -92,13 +92,24 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
         id: tc.tid || tc.id,
       }));
 
-      const existing = storeTestCases['custom_gen'] || [];
-      setTestCases({ ...storeTestCases, custom_gen: [...taggedCases, ...existing] });
+      // Each feature gets its own suite. Previously every run was prepended to one
+      // shared `custom_gen` bucket, so generating for a new feature left the old
+      // feature's cases in the list and the count only ever grew.
+      const featureName = (form.moduleName || form.scenario.slice(0, 40) || 'Untitled feature').trim();
+      const groupKey = `custom:${featureName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+      const previous = (storeTestCases as any)[groupKey] || [];
+
+      const withFeature = taggedCases.map((tc: any) => ({ ...tc, feature: featureName }));
+      setTestCases({ ...storeTestCases, [groupKey]: withFeature } as any);
+
+      const replaced = previous.length
+        ? ` Replaced the previous ${previous.length} case(s) for "${featureName}".`
+        : '';
 
       if (result.shortfall) {
-        showToast(`Generated ${taggedCases.length} test cases. ${result.shortfall}`, 'warning');
+        showToast(`Generated ${taggedCases.length} test cases for "${featureName}". ${result.shortfall}${replaced}`, 'warning');
       } else {
-        showToast(`✅ Generated ${taggedCases.length} test cases!`, 'success');
+        showToast(`✅ Generated ${taggedCases.length} test cases for "${featureName}".${replaced}`, 'success');
       }
       if (onGenerateSuccess) onGenerateSuccess();
     } catch (error) {

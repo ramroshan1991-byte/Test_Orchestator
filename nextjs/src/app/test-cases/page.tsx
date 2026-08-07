@@ -18,7 +18,7 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useAppStore } from '@/store/appStore';
+import { useAppStore, caseKey } from '@/store/appStore';
 import Sidebar from '@/components/Sidebar';
 import { ToastContainer, useToast } from '@/components/Toast';
 import CustomGenerator from './CustomGenerator';
@@ -72,6 +72,7 @@ export default function TestCasesPage() {
     updateTestCase,
     updateTestCases,
     deleteTestCases,
+    deleteTestCaseGroup,
   } = useAppStore();
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,27 +83,43 @@ export default function TestCasesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'plan' | 'custom'>('plan');
   const [dense, setDense] = useState(false);
+  const [filterFeature, setFilterFeature] = useState('All');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   // Plan-generated cases: all keys EXCEPT 'custom_gen'
-  const planTestCases = useMemo(() => {
-    return Object.entries(storeTestCases || {})
-      .filter(([key]) => key !== 'custom_gen')
-      .flatMap(([, cases]) => cases) as any[];
-  }, [storeTestCases]);
+  const isCustomKey = (key: string) => key === 'custom_gen' || key.startsWith('custom:');
 
-  // Custom-generated cases: only from 'custom_gen' key
-  const customTestCases = useMemo(() => {
-    return (storeTestCases?.['custom_gen'] || []) as any[];
-  }, [storeTestCases]);
+  const planTestCases = useMemo(
+    () =>
+      Object.entries(storeTestCases || {})
+        .filter(([key]) => !isCustomKey(key))
+        .flatMap(([, cases]) => cases) as any[],
+    [storeTestCases]
+  );
+
+  // One suite per feature, newest first, plus any legacy shared bucket.
+  const customGroups = useMemo(
+    () =>
+      Object.entries(storeTestCases || {})
+        .filter(([key]) => isCustomKey(key))
+        .map(([key, cases]) => ({
+          key,
+          feature: (cases as any[])[0]?.feature || (key === 'custom_gen' ? 'Earlier cases' : key.replace('custom:', '')),
+          cases: cases as any[],
+        }))
+        .filter((g) => g.cases.length),
+    [storeTestCases]
+  );
+
+  const customTestCases = useMemo(() => customGroups.flatMap((g) => g.cases), [customGroups]);
 
   // Active list based on selected tab
   const testCasesArray = activeTab === 'plan' ? planTestCases : customTestCases;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus, filterPriority, pageSize, activeTab]);
+  }, [searchTerm, filterStatus, filterPriority, filterFeature, pageSize, activeTab]);
 
   const filteredCases = useMemo(
     () =>
@@ -118,9 +135,11 @@ export default function TestCasesPage() {
         const matchPriority =
           filterPriority === 'All' ||
           String(tc.priority || 'Medium').toLowerCase() === filterPriority.toLowerCase();
-        return matchSearch && matchStatus && matchPriority;
+        const matchFeature =
+          filterFeature === 'All' || activeTab !== 'custom' || tc.feature === filterFeature;
+        return matchSearch && matchStatus && matchPriority && matchFeature;
       }),
-    [testCasesArray, searchTerm, filterStatus, filterPriority]
+    [testCasesArray, searchTerm, filterStatus, filterPriority, filterFeature, activeTab]
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredCases.length / pageSize));
@@ -128,8 +147,7 @@ export default function TestCasesPage() {
   const startIdx = (safePage - 1) * pageSize;
   const paginatedCases = filteredCases.slice(startIdx, startIdx + pageSize);
 
-  const caseId = (tc: any) => tc.tid || tc.id;
-  const pageIds = paginatedCases.map(caseId);
+  const pageIds = paginatedCases.map(caseKey);
   const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
 
   const toggleSelect = (id: string) =>
@@ -330,6 +348,21 @@ export default function TestCasesPage() {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              {activeTab === 'custom' && customGroups.length > 1 && (
+                <select
+                  value={filterFeature}
+                  onChange={(e) => setFilterFeature(e.target.value)}
+                  className="input sm:w-52"
+                  aria-label="Filter by feature"
+                >
+                  <option value="All">All features ({customTestCases.length})</option>
+                  {customGroups.map((g) => (
+                    <option key={g.key} value={g.feature}>
+                      {g.feature} ({g.cases.length})
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value)}
@@ -384,6 +417,48 @@ export default function TestCasesPage() {
             </div>
           </div>
 
+          {/* Feature suites — each generation run is its own suite, so a new
+              feature no longer piles onto the previous one. */}
+          {activeTab === 'custom' && customGroups.length > 0 && (
+            <div className="card p-4">
+              <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">
+                Feature suites
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {customGroups.map((g) => (
+                  <span
+                    key={g.key}
+                    className={`inline-flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-lg border text-sm ${
+                      filterFeature === g.feature
+                        ? 'border-blue-500 bg-blue-600/10 text-slate-100'
+                        : 'border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setFilterFeature(filterFeature === g.feature ? 'All' : g.feature)}
+                      className="font-medium"
+                    >
+                      {g.feature}
+                      <span className="ml-2 text-xs text-slate-400 tabular-nums">{g.cases.length}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Delete all ${g.cases.length} case(s) for "${g.feature}"?`)) return;
+                        deleteTestCaseGroup(g.key);
+                        setFilterFeature('All');
+                        showToast(`Removed the "${g.feature}" suite`, 'info');
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-700"
+                      aria-label={`Delete ${g.feature} suite`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Bulk action bar — only while something is selected */}
           {selected.size > 0 && (
             <div className="sticky top-0 z-20 card p-3 flex flex-wrap items-center gap-2 border-blue-600/60 shadow-lg">
@@ -433,7 +508,8 @@ export default function TestCasesPage() {
               </label>
 
               {paginatedCases.map((tc: any) => {
-                const tcId = caseId(tc);
+                const tcId = caseKey(tc);
+                const tcLabel = tc.tid || tc.id;
                 const isExpanded = expandedId === tcId;
                 const isSelected = selected.has(tcId);
                 const steps = tc.steps || tc.test_steps || [];
@@ -453,7 +529,7 @@ export default function TestCasesPage() {
                           checked={isSelected}
                           onChange={() => toggleSelect(tcId)}
                           className="mt-1 w-4 h-4 accent-blue-600 shrink-0"
-                          aria-label={`Select ${tcId}`}
+                          aria-label={`Select ${tcLabel}`}
                         />
 
                         <button
@@ -462,7 +538,7 @@ export default function TestCasesPage() {
                           aria-expanded={isExpanded}
                         >
                           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span className="font-mono text-blue-700 dark:text-blue-400 font-bold text-sm">{tcId}</span>
+                            <span className="font-mono text-blue-700 dark:text-blue-400 font-bold text-sm">{tcLabel}</span>
                             <StatusBadge status={tc.status} />
                             <PriorityBadge priority={tc.priority} />
                             <AutomatedBadge value={tc.is_automated ?? tc.isAutomated} />
@@ -484,7 +560,7 @@ export default function TestCasesPage() {
                             value={normalizeStatus(tc.status)}
                             onChange={(e) => setStatus(tcId, e.target.value)}
                             className="input w-32 py-1.5 text-xs hidden sm:block"
-                            aria-label={`Set status for ${tcId}`}
+                            aria-label={`Set status for ${tcLabel}`}
                           >
                             {STATUSES.map((s) => (
                               <option key={s} value={s}>{s}</option>

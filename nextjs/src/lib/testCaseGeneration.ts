@@ -143,10 +143,18 @@ export async function generateTestCasesBatched(
   }
 
   // Renumber so IDs are sequential across batches instead of restarting each time.
+  //
+  // `tid` is the human-facing test ID and deliberately restarts at 001 per suite —
+  // that is what QA teams and the exports expect. It is therefore NOT unique across
+  // suites, so every case also carries a `uid` that is. Edits, selection and delete
+  // all key off `uid`; without it, marking one TC_CUS_001 as Passed also silently
+  // changed the TC_CUS_001 belonging to a different feature.
   const prefix = String(storyData?.title || '').includes('[Custom]') ? 'TC_CUS_' : 'TC_';
+  const runId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const testCases = collected.map((tc, i) => ({
     ...tc,
     tid: `${prefix}${String(i + 1).padStart(3, '0')}`,
+    uid: `${runId}-${i + 1}`,
   }));
 
   onProgress?.({ collected: testCases.length, target, batch, totalBatches });

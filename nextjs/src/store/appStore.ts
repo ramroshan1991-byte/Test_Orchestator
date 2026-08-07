@@ -73,6 +73,8 @@ interface AppStore {
   setTestCases: (cases: { [key: string]: TestCase[] }) => void;
   /** Record an execution result against one case, wherever it lives. */
   updateTestCase: (caseId: string, patch: Record<string, any>) => void;
+  /** Remove a whole suite (one generation run) by its group key. */
+  deleteTestCaseGroup: (groupKey: string) => void;
   /** Apply the same patch to many cases (bulk mark pass/fail/blocked). */
   updateTestCases: (caseIds: string[], patch: Record<string, any>) => void;
   deleteTestCases: (caseIds: string[]) => void;
@@ -95,6 +97,12 @@ const defaultCustomPrompts: CustomPrompts = {
   testCase: 'Create detailed test cases with steps, expected results, and acceptance criteria',
   codeGen: 'Generate automated test code using the specified framework',
 };
+
+/**
+ * Stable identity for a case. Prefers `uid` (unique across suites); falls back to
+ * the display id for cases generated before uid existed.
+ */
+export const caseKey = (tc: any): string => tc?.uid || tc?.tid || tc?.id;
 
 export const useAppStore = create<AppStore>()(
   persist(
@@ -123,7 +131,7 @@ export const useAppStore = create<AppStore>()(
         const next: { [key: string]: any[] } = {};
         for (const [key, list] of Object.entries(groups)) {
           next[key] = (list as any[]).map((tc) =>
-            (tc.tid || tc.id) === caseId ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
+            caseKey(tc) === caseId ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
           );
         }
         set({ testCases: next as any });
@@ -135,10 +143,16 @@ export const useAppStore = create<AppStore>()(
         const next: { [key: string]: any[] } = {};
         for (const [key, list] of Object.entries(groups)) {
           next[key] = (list as any[]).map((tc) =>
-            ids.has(tc.tid || tc.id) ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
+            ids.has(caseKey(tc)) ? { ...tc, ...patch, lastUpdated: new Date().toISOString() } : tc
           );
         }
         set({ testCases: next as any });
+      },
+
+      deleteTestCaseGroup: (groupKey) => {
+        const groups = { ...(get().testCases || {}) } as any;
+        delete groups[groupKey];
+        set({ testCases: groups });
       },
 
       deleteTestCases: (caseIds) => {
@@ -146,7 +160,7 @@ export const useAppStore = create<AppStore>()(
         const groups = get().testCases || {};
         const next: { [key: string]: any[] } = {};
         for (const [key, list] of Object.entries(groups)) {
-          next[key] = (list as any[]).filter((tc) => !ids.has(tc.tid || tc.id));
+          next[key] = (list as any[]).filter((tc) => !ids.has(caseKey(tc)));
         }
         set({ testCases: next as any });
       },
