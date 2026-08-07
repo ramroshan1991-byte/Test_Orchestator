@@ -280,8 +280,8 @@ export default function TestCasesPage() {
               }`}
             >
               📋 From Test Plans
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeTab === 'plan' ? 'bg-blue-500/40 text-blue-100' : 'bg-slate-700 text-slate-400'
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold tabular-nums ${
+                activeTab === 'plan' ? 'bg-white text-blue-700' : 'bg-slate-700 text-slate-300'
               }`}>{planTestCases.length}</span>
             </button>
             <button
@@ -293,8 +293,8 @@ export default function TestCasesPage() {
               }`}
             >
               ✏️ Custom Generator
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeTab === 'custom' ? 'bg-amber-500/40 text-amber-100' : 'bg-slate-700 text-slate-400'
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold tabular-nums ${
+                activeTab === 'custom' ? 'bg-white text-amber-700' : 'bg-slate-700 text-slate-300'
               }`}>{customTestCases.length}</span>
             </button>
           </div>
@@ -462,7 +462,7 @@ export default function TestCasesPage() {
                           aria-expanded={isExpanded}
                         >
                           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span className="font-mono text-blue-400 font-bold text-sm">{tcId}</span>
+                            <span className="font-mono text-blue-700 dark:text-blue-400 font-bold text-sm">{tcId}</span>
                             <StatusBadge status={tc.status} />
                             <PriorityBadge priority={tc.priority} />
                             <AutomatedBadge value={tc.is_automated ?? tc.isAutomated} />
@@ -507,7 +507,7 @@ export default function TestCasesPage() {
                             <li key={i} className="ml-2">{step.replace(/^\d+\.\s*/, '')}</li>
                           ))}
                           {steps.length > 2 && (
-                            <li className="ml-2 list-none text-slate-500">+{steps.length - 2} more steps</li>
+                            <li className="ml-2 list-none text-slate-400">+{steps.length - 2} more steps</li>
                           )}
                         </ol>
                       )}
@@ -664,13 +664,13 @@ export default function TestCasesPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                 <div className="bg-slate-800/50 p-6 sm:p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
-                  <h4 className="text-lg font-bold text-blue-400 mb-3 flex items-center gap-2">🔗 From Jira</h4>
+                  <h4 className="text-lg font-bold text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">🔗 From Jira</h4>
                   <p className="text-sm text-slate-400 mb-8 flex-1 leading-relaxed">Fetch user stories from Jira and auto-generate test cases via test plan context.</p>
                   {/* Was /dashboard, which 404s — the route is /jira-connect. */}
                   <button onClick={() => router.push('/jira-connect')} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors">Go to Jira →</button>
                 </div>
                 <div className="bg-slate-800/50 p-6 sm:p-8 rounded-xl border border-slate-700 hover:border-slate-600 transition-colors flex flex-col">
-                   <h4 className="text-lg font-bold text-amber-400 mb-3 flex items-center gap-2">✏️ Custom Generator</h4>
+                   <h4 className="text-lg font-bold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">✏️ Custom Generator</h4>
                    <p className="text-sm text-slate-400 mb-8 flex-1 leading-relaxed">Describe a scenario and generate test cases instantly without a Jira connection.</p>
                    <button onClick={() => setActiveTab('custom')} className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-amber-900/20">Open Generator →</button>
                 </div>

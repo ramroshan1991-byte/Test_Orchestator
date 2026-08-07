@@ -68,7 +68,7 @@ export default function SettingsPage() {
         <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <SettingsIcon className="w-8 h-8 text-blue-400" />
+              <SettingsIcon className="w-8 h-8 text-blue-700 dark:text-blue-400" />
               <div>
                 <h1 className="text-3xl font-bold text-slate-100">Settings</h1>
                 <p className="text-slate-400">Configure your Test Orchestrator preferences</p>

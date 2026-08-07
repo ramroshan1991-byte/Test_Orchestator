@@ -27,7 +27,7 @@
     --slate-800: 255 255 255; /* white as cards */
     --slate-700: 226 232 240; /* #e2e8f0 as borders */
     --slate-600: 203 213 225; /* #cbd5e1 as borders hover */
-    --slate-500: 100 116 139; /* #64748b */
+    --slate-500: 75 90 112;   /* #4b5a70 — muted text, 7.01:1 on white (was 4.55:1) */
     --slate-400: 71 85 105;   /* darker text for light mode */
     --slate-300: 51 65 85;    /* headings */
     --slate-200: 30 41 59;    /* darker headings */
@@ -54,7 +54,7 @@
     --slate-800: 30 41 59;    /* #1e293b */
     --slate-700: 51 65 85;    /* #334155 */
     --slate-600: 71 85 105;   /* #475569 */
-    --slate-500: 100 116 139; /* #64748b */
+    --slate-500: 139 152 170; /* #8b98aa — muted text, 4.99:1 on cards (was 3.07:1) */
     --slate-400: 148 163 184; /* #94a3b8 */
     --slate-300: 203 213 225; /* #cbd5e1 */
     --slate-200: 226 232 240; /* #e2e8f0 */

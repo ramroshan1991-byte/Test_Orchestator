@@ -266,7 +266,7 @@ export default function TestPlansPage() {
         {/* Header */}
         <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-1">
-            <FileText className="w-8 h-8 text-purple-400" />
+            <FileText className="w-8 h-8 text-purple-700 dark:text-purple-400" />
             <h1 className="text-3xl font-bold text-slate-100">Test Plans</h1>
           </div>
           <p className="text-slate-400">AI-generated test plans following your template structure</p>
@@ -282,7 +282,7 @@ export default function TestPlansPage() {
                 {jiraStories.map((story) => (
                   <div key={story.key} className="card-hover p-4 space-y-3">
                     <div>
-                      <p className="font-mono text-blue-400 font-bold">{story.key}</p>
+                      <p className="font-mono text-blue-700 dark:text-blue-400 font-bold">{story.key}</p>
                       <p className="text-slate-100 font-semibold mt-1">{story.summary}</p>
                       {testPlans[story.key] && (
                         <span className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 inline-flex items-center gap-1">✓ Plan generated</span>
@@ -328,7 +328,7 @@ export default function TestPlansPage() {
                     >
                       <div>
                         <div className="flex items-center gap-3">
-                          <span className="font-mono text-purple-400 text-sm font-bold">{plan.storyKey || planKey}</span>
+                          <span className="font-mono text-purple-700 dark:text-purple-400 text-sm font-bold">{plan.storyKey || planKey}</span>
                           <span className="text-xs text-slate-500">v{plan.version || '1.0'}</span>
                           <span className="text-xs text-slate-500">{plan.date}</span>
                         </div>
@@ -394,7 +394,7 @@ export default function TestPlansPage() {
                                     <td className="py-2 pr-4 text-slate-300">{env.browser}</td>
                                     <td className="py-2 pr-4 text-slate-300">{env.os}</td>
                                     <td className="py-2 pr-4 text-slate-300">{env.device}</td>
-                                    <td className="py-2 text-blue-400 text-xs">{env.url || '—'}</td>
+                                    <td className="py-2 text-blue-700 dark:text-blue-400 text-xs">{env.url || '—'}</td>
                                   </tr>
                                 ))}
                                 {!(plan.test_environments||[]).length && <tr><td colSpan={5} className="py-2 text-slate-500 italic text-sm">No environments defined</td></tr>}
@@ -573,7 +573,7 @@ export default function TestPlansPage() {
 
           {testPlansArray.length === 0 && jiraStories.length > 0 && (
             <div className="card p-8 text-center">
-              <p className="text-slate-400 text-sm">Select a story above and click "Generate Plan" — or open any story card and click <strong className="text-purple-400">Generate Test Plan</strong>.</p>
+              <p className="text-slate-400 text-sm">Select a story above and click "Generate Plan" — or open any story card and click <strong className="text-purple-700 dark:text-purple-400">Generate Test Plan</strong>.</p>
             </div>
           )}
         </div>

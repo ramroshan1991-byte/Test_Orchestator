@@ -180,7 +180,7 @@ export default function JiraConnectPage() {
         {/* Header */}
         <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
-            <Link2 className="w-8 h-8 text-blue-400" />
+            <Link2 className="w-8 h-8 text-blue-700 dark:text-blue-400" />
             <h1 className="text-3xl font-bold text-slate-100">Jira Connect</h1>
           </div>
           <p className="text-slate-400">
@@ -259,7 +259,7 @@ export default function JiraConnectPage() {
                   {loading ? 'Connecting...' : 'Connect to Jira'}
                 </button>
                 {synced && (
-                  <span className="flex items-center gap-2 text-green-400 text-sm">
+                  <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-sm">
                     <CheckCircle className="w-4 h-4" />
                     Connected at {synced.toLocaleTimeString()}
                   </span>
@@ -311,7 +311,7 @@ export default function JiraConnectPage() {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-mono text-blue-400 font-bold">{story.key}</span>
+                          <span className="font-mono text-blue-700 dark:text-blue-400 font-bold">{story.key}</span>
                           <span className={getPriorityColor(story.priority)}>
                             {story.priority}
                           </span>

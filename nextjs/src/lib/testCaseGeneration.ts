@@ -14,6 +14,8 @@ export const MIN_TARGET_CASES = 12;
 export const MAX_TARGET_CASES = 60;
 
 export interface GenerationOptions {
+  /** Explicit application under test — wins over any configured default. */
+  targetApp?: string;
   count?: string;
   types?: string[];
   priority?: string;

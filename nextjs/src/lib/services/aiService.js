@@ -12,11 +12,35 @@ const client = isAnthropic ? new Anthropic({ apiKey }) : null;
 // every story really does target one fixed app.
 const TARGET_APP_URL = process.env.TARGET_APP_URL || '';
 
-// Tells the model where the app lives, or to take it from the story if we don't know.
-const appUnderTest = (storyData = {}) => {
-  if (TARGET_APP_URL) return `Application under test: ${TARGET_APP_URL}`;
-  const inline = String(storyData.description || storyData.summary || '').match(/https?:\/\/[^\s)"']+/);
-  if (inline) return `Application under test: ${inline[0]} (taken from the story)`;
+/**
+ * Resolves the application under test, most specific source first.
+ *
+ * TARGET_APP_URL used to win outright, which meant a story about one product
+ * came back with another product's steps. It is now only a fallback for when
+ * nothing else identifies an application — a named product always wins.
+ */
+const appUnderTest = (storyData = {}, explicitApp = '') => {
+  const named = String(explicitApp || '').trim();
+  if (named) {
+    return `Application under test: ${named}
+Use ${named}'s real screens, field labels, button text and realistic test data for it. Do NOT substitute any other website or demo application.`;
+  }
+
+  const inline = String(storyData.description || storyData.summary || storyData.title || '').match(
+    /https?:\/\/[^\s)"']+/
+  );
+  if (inline) {
+    return `Application under test: ${inline[0]} (taken from the story)
+Use its real screens, field labels and realistic test data. Do NOT substitute any other website.`;
+  }
+
+  if (TARGET_APP_URL) {
+    return `Application under test: determine it from the story below.
+If the story names a specific application, product or website (for example a named consumer product or an internal system), that is the application under test — use ITS real screens, field labels and realistic test data.
+Only if the story names no application at all, fall back to ${TARGET_APP_URL} as the default environment.
+Never substitute ${TARGET_APP_URL}, or its sample credentials, for an application the story actually names.`;
+  }
+
   return `Application under test: the application described in the story below. Reference its real screens, fields and buttons by the names the story uses. Do NOT substitute an unrelated demo site or invent a URL that the story does not mention.`;
 };
 
@@ -229,6 +253,7 @@ function readOptions(testPlanScope) {
     appType: gen.appType || 'Web App',
     context: gen.context || '',
     countLabel: gen.count || '',
+    targetApp: gen.targetApp || '',
     planScopeText:
       typeof scope.scope === 'string'
         ? scope.scope
@@ -477,7 +502,7 @@ Return ONLY a JSON array of ${size} objects, in the form {"test_cases": [ ... ]}
 Object schema (every field required):
 ${CASE_SCHEMA}
 
-${appUnderTest(storyData)}
+${appUnderTest(storyData, opts.targetApp)}
 Application type: ${opts.appType}
 Feature / module: ${moduleName}
 

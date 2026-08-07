@@ -14,6 +14,7 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
 
   const [form, setForm] = useState({
     moduleName: '',
+    targetApp: '',
     scenario: '',
     ac: '',
     appType: 'Web App',
@@ -42,7 +43,7 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
   };
 
   const clearForm = () => {
-    const fresh = { moduleName:'', scenario:'', ac:'', appType:'Web App', priority:'All', types:['Positive', 'Negative', 'Edge Case'], count:'8-12', context:'' };
+    const fresh = { moduleName:'', targetApp:'', scenario:'', ac:'', appType:'Web App', priority:'All', types:['Positive', 'Negative', 'Edge Case'], count:'8-12', context:'' };
     setForm(fresh);
     localStorage.removeItem('to_custom_form');
   };
@@ -70,6 +71,7 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
       };
 
       const generation = {
+        targetApp: form.targetApp,
         count: form.count,
         types: form.types,
         priority: form.priority,
@@ -124,6 +126,20 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1">Feature / Module Name</label>
           <input type="text" className="input bg-slate-800" placeholder="e.g. Login Page, Payment Flow" value={form.moduleName} onChange={e => updateForm('moduleName', e.target.value)} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Application Under Test</label>
+          <input
+            type="text"
+            className="input bg-slate-800"
+            placeholder="e.g. Facebook, or https://www.facebook.com/"
+            value={form.targetApp}
+            onChange={e => updateForm('targetApp', e.target.value)}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Name the product or paste its URL. Steps will use its real screens and data. Leave blank to infer it from the scenario below.
+          </p>
         </div>
 
         <div>

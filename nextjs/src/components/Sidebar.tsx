@@ -129,7 +129,7 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           <span className="text-sm font-medium">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
-          {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
+          {isDark ? <Sun className="w-4 h-4 text-amber-700 dark:text-amber-400" /> : <Moon className="w-4 h-4 text-slate-500" />}
         </button>
         <p className="text-xs text-slate-500">v2.0.0 · Next.js + React 19</p>
       </div>

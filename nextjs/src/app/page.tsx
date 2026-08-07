@@ -75,10 +75,10 @@ export default function Dashboard() {
   };
 
   const workflowSteps = [
-    { emoji: '🔗', label: 'Connect to Jira', desc: 'Import user stories to start test generation', href: '/jira-connect', color: 'text-blue-400' },
-    { emoji: '📋', label: 'Generate Test Plans', desc: 'Use AI to create comprehensive test plans', href: '/test-plans', color: 'text-indigo-400' },
-    { emoji: '✅', label: 'Generate Test Cases', desc: 'Create detailed, realistic test cases', href: '/test-cases', color: 'text-green-400' },
-    { emoji: '🤖', label: 'Generate Automation Code', desc: 'Build Selenium, Playwright or BDD scripts', href: '/code-generator', color: 'text-purple-400' },
+    { emoji: '🔗', label: 'Connect to Jira', desc: 'Import user stories to start test generation', href: '/jira-connect', color: 'text-blue-700 dark:text-blue-400' },
+    { emoji: '📋', label: 'Generate Test Plans', desc: 'Use AI to create comprehensive test plans', href: '/test-plans', color: 'text-indigo-700 dark:text-indigo-400' },
+    { emoji: '✅', label: 'Generate Test Cases', desc: 'Create detailed, realistic test cases', href: '/test-cases', color: 'text-emerald-700 dark:text-emerald-400' },
+    { emoji: '🤖', label: 'Generate Automation Code', desc: 'Build Selenium, Playwright or BDD scripts', href: '/code-generator', color: 'text-purple-700 dark:text-purple-400' },
   ];
 
   const recentTestPlans = testPlanList.slice(-5).reverse();
@@ -147,7 +147,7 @@ export default function Dashboard() {
             {/* Workflow Steps */}
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-5">
-                <Activity className="w-5 h-5 text-blue-400" />
+                <Activity className="w-5 h-5 text-blue-700 dark:text-blue-400" />
                 <h2 className="text-lg font-bold text-slate-100">Quick Workflow</h2>
               </div>
               <div className="space-y-2">
@@ -172,12 +172,12 @@ export default function Dashboard() {
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-400" />
+                  <FileText className="w-5 h-5 text-indigo-700 dark:text-indigo-400" />
                   <h2 className="text-lg font-bold text-slate-100">Recent Test Plans</h2>
                 </div>
                 <button
                   onClick={() => router.push('/test-plans')}
-                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
+                  className="text-xs text-blue-700 dark:text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors"
                 >
                   View all <ArrowRight className="w-3 h-3" />
                 </button>
@@ -192,7 +192,7 @@ export default function Dashboard() {
                       className="w-full flex items-center gap-3 p-3 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-700/30 hover:border-indigo-700/50 rounded-lg transition-all duration-200 text-left group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-4 h-4 text-indigo-400" />
+                        <FileText className="w-4 h-4 text-indigo-700 dark:text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-200 text-sm font-medium truncate">
@@ -225,12 +225,12 @@ export default function Dashboard() {
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-400" />
+                <CheckCircle className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
                 <h2 className="text-lg font-bold text-slate-100">Recent Test Cases</h2>
               </div>
               <button
                 onClick={() => router.push('/test-cases')}
-                className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1 transition-colors"
+                className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-green-300 flex items-center gap-1 transition-colors"
               >
                 View all <ArrowRight className="w-3 h-3" />
               </button>
@@ -248,10 +248,10 @@ export default function Dashboard() {
                       className="flex items-start gap-3 p-4 bg-slate-700/40 hover:bg-slate-700/80 border border-slate-700/30 hover:border-green-700/50 rounded-xl text-left transition-all duration-200 group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
+                        <CheckCircle className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-mono text-xs text-blue-400 mb-1">{tcId}</p>
+                        <p className="font-mono text-xs text-blue-700 dark:text-blue-400 mb-1">{tcId}</p>
                         <p className="text-slate-200 text-sm font-medium truncate leading-snug">{tcName}</p>
                         <div className="flex flex-wrap items-center gap-1.5 mt-2">
                           <PriorityBadge priority={tc.priority} />

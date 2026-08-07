@@ -150,7 +150,7 @@ export function CustomPromptMode() {
 
             <div className="flex items-center gap-3">
               {saved && (
-                <span className="text-green-400 text-sm font-medium">
+                <span className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">
                   ✓ Saved!
                 </span>
               )}
