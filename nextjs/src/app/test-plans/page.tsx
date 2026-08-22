@@ -11,6 +11,7 @@ import Sidebar from '@/components/Sidebar';
 import { ToastContainer, useToast } from '@/components/Toast';
 
 import { apiClient } from '@/lib/api-client';
+import { generateTestCasesBatched, type GenerationProgress } from '@/lib/testCaseGeneration';
 
 // STANDARDIZED DOWNLOAD HELPERS
 const getFilename = (prefix: string, extension: string, title?: string) => {
@@ -51,7 +52,7 @@ const BulletList = ({ items }: { items?: string[] }) => (
   <ul className="space-y-1.5">
     {(items || []).map((item, i) => (
       <li key={i} className="flex gap-2 text-slate-300 text-sm">
-        <span className="text-purple-400 mt-0.5">•</span>
+        <span className="text-purple-600 dark:text-purple-400 mt-0.5">•</span>
         <span>{item}</span>
       </li>
     ))}
@@ -76,22 +77,24 @@ const Section = ({ number, title, children }: { number: string; title: string; c
 const CriteriaPair = ({ entryLabel, exitLabel, entry, exit }: { entryLabel: string; exitLabel: string; entry?: string[]; exit?: string[] }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-2">✅ {entryLabel}</p>
+      <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">✅ {entryLabel}</p>
       <BulletList items={entry} />
     </div>
     <div>
-      <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-2">🚪 {exitLabel}</p>
+      <p className="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wide mb-2">🚪 {exitLabel}</p>
       <BulletList items={exit} />
     </div>
   </div>
 );
 
 export default function TestPlansPage() {
-  const { jiraStories, testPlans, setTestPlans, setTestCases } = useAppStore();
+  const { jiraStories, testPlans, setTestPlans, testCases, setTestCases } = useAppStore();
   const { showToast } = useToast();
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [generatingPlanId, setGeneratingPlanId] = useState<string | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState<number | null>(null);
+  const [generatingCasesFor, setGeneratingCasesFor] = useState<string | null>(null);
+  const [caseProgress, setCaseProgress] = useState<GenerationProgress | null>(null);
 
   const testPlansArray: any[] = useMemo(() => Object.values(testPlans || {}), [testPlans]);
 
@@ -127,19 +130,45 @@ export default function TestPlansPage() {
   };
 
   const handleGenerateTestCasesFromPlan = async (plan: any) => {
+    const storyKey = plan.storyKey || plan.storyId || null;
+    const planKey = String(plan.id || storyKey || Date.now());
+    setGeneratingCasesFor(planKey);
+    setCaseProgress(null);
     try {
-      showToast('Generating test cases...', 'info');
-      const storyKey = plan.storyKey || plan.storyId || null;
+      // Pass the full Jira story (description + acceptance criteria), not just the
+      // title — coverage depth is derived from what the story actually contains.
       const storyData = storyKey
         ? jiraStories.find((s) => s.key === storyKey) || { key: storyKey, summary: plan.storyTitle }
         : { key: null, summary: plan.storyTitle || plan.project_name };
-      const resp = await apiClient.generateTestCases(storyData, plan);
-      const testCases = resp?.testCases || resp;
-      if (!testCases) throw new Error('No test cases returned');
-      setTestCases({ [plan.id || storyKey || Date.now()]: testCases });
-      showToast(`Generated ${testCases.length} test cases`, 'success');
+
+      const result = await generateTestCasesBatched(
+        storyData,
+        plan,
+        { count: 'Auto (AI decides)' },
+        setCaseProgress
+      );
+
+      if (!result.testCases.length) throw new Error('No test cases returned');
+
+      const tagged = result.testCases.map((tc: any) => ({
+        ...tc,
+        source: storyKey || 'Plan',
+        id: tc.tid || tc.id,
+      }));
+
+      // Merge — replacing the map wiped every other story's cases.
+      setTestCases({ ...testCases, [planKey]: tagged });
+
+      if (result.shortfall) {
+        showToast(`Generated ${tagged.length} test cases. ${result.shortfall}`, 'warning');
+      } else {
+        showToast(`Generated ${tagged.length} test cases`, 'success');
+      }
     } catch (error) {
       showToast(`Error: ${error instanceof Error ? error.message : 'Unknown'}`, 'error');
+    } finally {
+      setGeneratingCasesFor(null);
+      setCaseProgress(null);
     }
   };
 
@@ -226,23 +255,24 @@ export default function TestPlansPage() {
     }
   };
 
+  // Was dark-palette-only chips (red-200 on red-700/80), unreadable in light mode.
   const impactColor = (impact: string) =>
-    impact === 'High' ? 'bg-red-700/80 text-red-200' : impact === 'Medium' ? 'bg-amber-700/80 text-amber-200' : 'bg-green-700/80 text-green-200';
+    impact === 'High' ? 'status-fail' : impact === 'Medium' ? 'status-run' : 'status-pass';
 
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-1">
-            <FileText className="w-8 h-8 text-purple-400" />
+            <FileText className="w-8 h-8 text-purple-700 dark:text-purple-400" />
             <h1 className="text-3xl font-bold text-slate-100">Test Plans</h1>
           </div>
           <p className="text-slate-400">AI-generated test plans following your template structure</p>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-8">
 
           {/* Generate from Stories */}
           {jiraStories.length > 0 && (
@@ -252,17 +282,17 @@ export default function TestPlansPage() {
                 {jiraStories.map((story) => (
                   <div key={story.key} className="card-hover p-4 space-y-3">
                     <div>
-                      <p className="font-mono text-blue-400 font-bold">{story.key}</p>
+                      <p className="font-mono text-blue-700 dark:text-blue-400 font-bold">{story.key}</p>
                       <p className="text-slate-100 font-semibold mt-1">{story.summary}</p>
                       {testPlans[story.key] && (
-                        <span className="text-xs text-green-400 mt-1 inline-flex items-center gap-1">✓ Plan generated</span>
+                        <span className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 inline-flex items-center gap-1">✓ Plan generated</span>
                       )}
                     </div>
                     {generatingPlanId === story.key ? (
                       <div className="w-full p-3 bg-slate-800 rounded text-sm text-slate-300 space-y-1">
                         <p className="text-slate-400 text-xs">Generating test plan...</p>
                         {['Analyzing user story...','Identifying scope and risks...','Building test strategy...','Structuring all sections...'].map((step, i) => (
-                          <p key={i} className={`text-xs ${currentStepIndex !== null && i < currentStepIndex ? 'text-green-400' : currentStepIndex === i ? 'text-purple-300' : 'text-slate-500'}`}>
+                          <p key={i} className={`text-xs ${currentStepIndex !== null && i < currentStepIndex ? 'text-emerald-700 dark:text-emerald-400' : currentStepIndex === i ? 'text-purple-300' : 'text-slate-500'}`}>
                             {currentStepIndex !== null && i < currentStepIndex ? '✓' : currentStepIndex === i ? '⏳' : '○'} {step}
                           </p>
                         ))}
@@ -298,7 +328,7 @@ export default function TestPlansPage() {
                     >
                       <div>
                         <div className="flex items-center gap-3">
-                          <span className="font-mono text-purple-400 text-sm font-bold">{plan.storyKey || planKey}</span>
+                          <span className="font-mono text-purple-700 dark:text-purple-400 text-sm font-bold">{plan.storyKey || planKey}</span>
                           <span className="text-xs text-slate-500">v{plan.version || '1.0'}</span>
                           <span className="text-xs text-slate-500">{plan.date}</span>
                         </div>
@@ -334,11 +364,11 @@ export default function TestPlansPage() {
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-2">3.1 Inclusions</p>
+                              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-2">3.1 Inclusions</p>
                               <BulletList items={plan.inclusions || (plan.scope?.in_scope)} />
                             </div>
                             <div>
-                              <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-2">3.2 Exclusions</p>
+                              <p className="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wide mb-2">3.2 Exclusions</p>
                               <BulletList items={plan.exclusions || (plan.scope?.out_of_scope)} />
                             </div>
                           </div>
@@ -364,7 +394,7 @@ export default function TestPlansPage() {
                                     <td className="py-2 pr-4 text-slate-300">{env.browser}</td>
                                     <td className="py-2 pr-4 text-slate-300">{env.os}</td>
                                     <td className="py-2 pr-4 text-slate-300">{env.device}</td>
-                                    <td className="py-2 text-blue-400 text-xs">{env.url || '—'}</td>
+                                    <td className="py-2 text-blue-700 dark:text-blue-400 text-xs">{env.url || '—'}</td>
                                   </tr>
                                 ))}
                                 {!(plan.test_environments||[]).length && <tr><td colSpan={5} className="py-2 text-slate-500 italic text-sm">No environments defined</td></tr>}
@@ -459,7 +489,7 @@ export default function TestPlansPage() {
                                   <tr key={i} className="border-b border-slate-700/50">
                                     <td className="py-2 pr-4 text-slate-200">{r.risk}</td>
                                     <td className="py-2 pr-4">
-                                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${impactColor(r.impact)}`}>{r.impact}</span>
+                                      <span className={impactColor(r.impact)}>{r.impact}</span>
                                     </td>
                                     <td className="py-2 text-slate-300">{r.mitigation}</td>
                                   </tr>
@@ -508,8 +538,17 @@ export default function TestPlansPage() {
                           <button onClick={() => handleExportPdf(plan)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-medium transition-colors">
                             <Download className="w-4 h-4" /> Export PDF
                           </button>
-                          <button onClick={() => handleGenerateTestCasesFromPlan(plan)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors ml-auto">
-                            <ClipboardList className="w-4 h-4" /> Generate Test Cases →
+                          <button
+                            onClick={() => handleGenerateTestCasesFromPlan(plan)}
+                            disabled={generatingCasesFor !== null}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors ml-auto"
+                          >
+                            <ClipboardList className="w-4 h-4" />
+                            {generatingCasesFor === planKey
+                              ? caseProgress
+                                ? `Generating… ${caseProgress.collected}/${caseProgress.target}`
+                                : 'Generating…'
+                              : 'Generate Test Cases →'}
                           </button>
                           <button onClick={() => handleDeletePlan(planKey)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-300 text-sm font-medium transition-colors">
                             <Trash2 className="w-4 h-4" /> Delete
@@ -534,7 +573,7 @@ export default function TestPlansPage() {
 
           {testPlansArray.length === 0 && jiraStories.length > 0 && (
             <div className="card p-8 text-center">
-              <p className="text-slate-400 text-sm">Select a story above and click "Generate Plan" — or open any story card and click <strong className="text-purple-400">Generate Test Plan</strong>.</p>
+              <p className="text-slate-400 text-sm">Select a story above and click "Generate Plan" — or open any story card and click <strong className="text-purple-700 dark:text-purple-400">Generate Test Plan</strong>.</p>
             </div>
           )}
         </div>

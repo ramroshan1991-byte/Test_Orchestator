@@ -2,45 +2,305 @@ import Anthropic from '@anthropic-ai/sdk';
 import axios from 'axios';
 
 const apiKey = process.env.ANTHROPIC_API_KEY || '';
-const client = apiKey.startsWith('sk-ant') ? new Anthropic({
-  apiKey: apiKey,
-}) : null;
+const isGroq = apiKey.startsWith('gsk_');
+const isAnthropic = apiKey.startsWith('sk-ant');
+const client = isAnthropic ? new Anthropic({ apiKey }) : null;
 
-async function callAI(messages, maxTokens) {
-  try {
-    if (apiKey.startsWith('gsk_')) {
-      const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-        model: 'llama-3.3-70b-versatile', // Updated to more stable/recent model
-        messages: messages,
-        max_tokens: maxTokens,
-        temperature: 0.7
-      }, {
-        headers: { 
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      return response.data.choices[0].message.content;
-    } else if (client) {
-      const response = await client.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
-        max_tokens: maxTokens,
-        messages: messages
-      });
-      return response.content[0].text;
-    }
-  } catch (error) {
-    const errorData = error.response?.data?.error?.message || error.message;
-    console.error('AI Call Error:', errorData);
-    throw new Error(errorData);
+// Application under test. Deliberately NOT defaulted: the prompts used to hardcode
+// saucedemo.com, which overrode the actual story — a Facebook login story came back
+// with "Navigate to https://www.saucedemo.com/" steps. Set TARGET_APP_URL only when
+// every story really does target one fixed app.
+const TARGET_APP_URL = process.env.TARGET_APP_URL || '';
+
+/**
+ * Resolves the application under test, most specific source first.
+ *
+ * TARGET_APP_URL used to win outright, which meant a story about one product
+ * came back with another product's steps. It is now only a fallback for when
+ * nothing else identifies an application — a named product always wins.
+ */
+const appUnderTest = (storyData = {}, explicitApp = '') => {
+  const named = String(explicitApp || '').trim();
+  if (named) {
+    return `Application under test: ${named}
+Use ${named}'s real screens, field labels, button text and realistic test data for it. Do NOT substitute any other website or demo application.`;
   }
-  throw new Error("No valid AI Provider configured. Ensure ANTHROPIC_API_KEY is set in Vercel.");
+
+  const inline = String(storyData.description || storyData.summary || storyData.title || '').match(
+    /https?:\/\/[^\s)"']+/
+  );
+  if (inline) {
+    return `Application under test: ${inline[0]} (taken from the story)
+Use its real screens, field labels and realistic test data. Do NOT substitute any other website.`;
+  }
+
+  if (TARGET_APP_URL) {
+    return `Application under test: determine it from the story below.
+If the story names a specific application, product or website (for example a named consumer product or an internal system), that is the application under test — use ITS real screens, field labels and realistic test data.
+Only if the story names no application at all, fall back to ${TARGET_APP_URL} as the default environment.
+Never substitute ${TARGET_APP_URL}, or its sample credentials, for an application the story actually names.`;
+  }
+
+  return `Application under test: the application described in the story below. Reference its real screens, fields and buttons by the names the story uses. Do NOT substitute an unrelated demo site or invent a URL that the story does not mention.`;
+};
+
+// Output ceilings differ sharply by provider, and Groq's is the binding one:
+// Groq counts the *requested* max_tokens against the account's tokens-per-minute
+// budget, so on the free on_demand tier (12k TPM) a request asking for 16k is
+// rejected before the model ever runs. Ask for what a call actually needs.
+// Override GROQ_TPM_LIMIT if the account is upgraded to a higher tier.
+const GROQ_TPM_LIMIT = Number(process.env.GROQ_TPM_LIMIT) || 12000;
+// Leave room for the prompt itself, which is also counted.
+const GROQ_MAX_OUTPUT = Math.max(1500, Math.floor(GROQ_TPM_LIMIT * 0.55));
+// Claude needs streaming above ~16k output, so that is its safe non-streaming cap.
+const ANTHROPIC_MAX_OUTPUT = 16000;
+
+const outputBudget = (wanted) =>
+  isGroq ? Math.min(wanted, GROQ_MAX_OUTPUT) : Math.min(wanted, ANTHROPIC_MAX_OUTPUT);
+
+// A fully-detailed case in this 12-field schema runs ~200-260 output tokens.
+const tokensForBatch = (size) => outputBudget(size * 280 + 900);
+
+// A single call asked for 40 detailed schema-conforming cases either truncates or
+// silently shortens the list, so callers request small batches and accumulate.
+// The client drives the loop (see lib/testCaseGeneration.ts) because a serverless
+// function has a wall-clock limit that a server-side loop would blow through.
+export const DEFAULT_BATCH_SIZE = 10;
+export const MIN_TARGET_CASES = 12;
+export const MAX_TARGET_CASES = 60;
+
+const CASE_SCHEMA = `[
+  {
+    "scenario": "string — a distinct, specific test scenario title",
+    "tid": "string (e.g. TC_001)",
+    "testcase_description": "string",
+    "precondition": "string",
+    "test_steps": ["string (step 1)", "string (step 2)"],
+    "expected_result": "string",
+    "actual_result": "",
+    "status": "Not Executed",
+    "executed_qa_name": "",
+    "misc_comments": "",
+    "priority": "Critical|High|Medium|Low",
+    "is_automated": "Yes|No"
+  }
+]`;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Groq enforces a tokens-per-minute budget across all requests, so a multi-batch
+// run trips it even when each individual call is sized correctly. Honour the
+// server's retry-after rather than failing the run.
+function retryDelayMs(error, attempt) {
+  const header = error.response?.headers?.['retry-after'];
+  if (header) return Math.min(65000, (Number(header) || 1) * 1000 + 500);
+  const message = error.response?.data?.error?.message || '';
+  const parsed = message.match(/try again in ([\d.]+)s/i);
+  if (parsed) return Math.min(65000, Math.ceil(parseFloat(parsed[1]) * 1000) + 500);
+  return Math.min(30000, 2000 * 2 ** attempt);
+}
+
+const isRateLimited = (error) => {
+  const status = error.response?.status;
+  const message = error.response?.data?.error?.message || error.message || '';
+  return status === 429 || /rate limit|tokens per minute|TPM|too large/i.test(message);
+};
+
+async function callAI(prompt, maxTokens, { retries = 3 } = {}) {
+  const budget = outputBudget(maxTokens);
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      if (isGroq) {
+        const body = {
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: budget,
+          temperature: 0.8,
+        };
+
+        const post = (payload) =>
+          axios.post('https://api.groq.com/openai/v1/chat/completions', payload, {
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            timeout: 120000,
+          });
+
+        // JSON mode keeps the response parseable; fall back if it is unavailable,
+        // but never swallow a rate-limit error as an unsupported-feature error.
+        let response;
+        try {
+          response = await post({ ...body, response_format: { type: 'json_object' } });
+        } catch (err) {
+          if (isRateLimited(err)) throw err;
+          console.warn(
+            'Groq JSON mode unavailable, retrying as free-form:',
+            err.response?.data?.error?.message || err.message
+          );
+          response = await post(body);
+        }
+        return response.data.choices[0].message.content;
+      }
+
+      if (client) {
+        const response = await client.messages.create({
+          model: 'claude-opus-5',
+          max_tokens: budget,
+          output_config: { effort: 'medium' },
+          messages: [{ role: 'user', content: prompt }],
+        });
+        // content[0] may be a thinking block, so join the text blocks.
+        return response.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+      }
+
+      throw new Error('No valid AI Provider configured. Ensure ANTHROPIC_API_KEY is set in Vercel.');
+    } catch (error) {
+      const errorData = error.response?.data?.error?.message || error.message;
+
+      if (isRateLimited(error) && attempt < retries) {
+        const wait = retryDelayMs(error, attempt);
+        console.warn(`Rate limited (attempt ${attempt + 1}/${retries + 1}); retrying in ${wait}ms.`);
+        await sleep(wait);
+        continue;
+      }
+
+      console.error('AI Call Error:', errorData);
+      throw new Error(errorData);
+    }
+  }
+}
+
+// Pulls a JSON array out of a model response. Handles code fences, a
+// `{"test_cases": [...]}` wrapper (JSON mode always returns an object), and
+// truncated output — and reports how much it had to discard so a short batch is
+// visible in the logs instead of looking like the model's own choice.
+function parseCaseArray(content, label = 'batch') {
+  let raw = String(content || '').trim();
+  raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+
+  const tryParse = (text) => {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+
+  const unwrap = (value) => {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') {
+      const arrayKey = Object.keys(value).find((k) => Array.isArray(value[k]));
+      if (arrayKey) return value[arrayKey];
+    }
+    return null;
+  };
+
+  const whole = unwrap(tryParse(raw));
+  if (whole) return whole;
+
+  const start = raw.indexOf('[');
+  const end = raw.lastIndexOf(']');
+  if (start !== -1 && end > start) {
+    const sliced = unwrap(tryParse(raw.slice(start, end + 1)));
+    if (sliced) return sliced;
+  }
+
+  // Truncated mid-object: keep every complete object and say so.
+  if (start !== -1) {
+    const lastComplete = raw.lastIndexOf('},');
+    if (lastComplete > start) {
+      const repaired = unwrap(tryParse(`${raw.slice(start, lastComplete + 1)}]`));
+      if (repaired) {
+        console.warn(
+          `[${label}] response was truncated (likely hit max_tokens); recovered ${repaired.length} complete case(s) and discarded the partial tail.`
+        );
+        return repaired;
+      }
+    }
+  }
+
+  throw new Error(`Could not parse test cases from the AI response (${label}).`);
+}
+
+const normalizeScenario = (text) =>
+  String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+// Identical prompts produce near-identical output, which is why regenerating a
+// story used to return the same list. A per-run token plus an explicit
+// vary-your-emphasis instruction breaks that. (Not a caching concern: these are
+// one-shot generations, not a cached multi-turn prefix.)
+const runToken = () => Math.random().toString(36).slice(2, 10);
+
+const VARIATION_RULE = (token) => `Variation token for this run: ${token}.
+This is a fresh generation run. Do not reproduce a canned or boilerplate list: vary which
+behaviours you probe, the order you present them in, the concrete test data you choose, and
+the wording of scenario titles compared to an obvious first-pass answer. Coverage of the
+acceptance criteria is still mandatory — vary the exploration around it, not the requirements.`;
+
+// Reads the Custom Generator form / test plan context in whatever shape the
+// caller sent. `generation` is the structured form; `scope` is the older
+// free-text string, still accepted so existing callers keep working.
+function readOptions(testPlanScope) {
+  const scope = testPlanScope || {};
+  const gen = scope.generation || {};
+  return {
+    types: Array.isArray(gen.types) && gen.types.length
+      ? gen.types
+      : ['Positive', 'Negative', 'Edge Case', 'Boundary'],
+    priority: gen.priority || 'All',
+    appType: gen.appType || 'Web App',
+    context: gen.context || '',
+    countLabel: gen.count || '',
+    targetApp: gen.targetApp || '',
+    planScopeText:
+      typeof scope.scope === 'string'
+        ? scope.scope
+        : [scope.objective, scope.scope, (scope.inclusions || []).join('; ')].filter(Boolean).join(' | '),
+  };
+}
+
+// How many cases the run should aim for. An explicit range from the form wins;
+// otherwise scale with how much the story actually gives us to test.
+export function resolveTargetCount(storyData = {}, testPlanScope = {}) {
+  const { countLabel } = readOptions(testPlanScope);
+
+  const range = String(countLabel).match(/(\d+)\s*-\s*(\d+)/);
+  if (range) {
+    return Math.min(MAX_TARGET_CASES, Math.max(MIN_TARGET_CASES, parseInt(range[2], 10)));
+  }
+  const single = String(countLabel).match(/^\s*(\d+)\s*$/);
+  if (single) {
+    return Math.min(MAX_TARGET_CASES, Math.max(MIN_TARGET_CASES, parseInt(single[1], 10)));
+  }
+
+  const acCount = Array.isArray(storyData.acceptanceCriteria) ? storyData.acceptanceCriteria.length : 0;
+  const descLength = String(storyData.description || '').length;
+  const derived = 14 + acCount * 4 + Math.floor(descLength / 500) * 3;
+  return Math.min(MAX_TARGET_CASES, Math.max(MIN_TARGET_CASES, derived));
+}
+
+function buildStoryContext(storyData = {}) {
+  const parts = [];
+  if (storyData.key) parts.push(`Story Key: ${storyData.key}`);
+  parts.push(`Title / Summary: ${storyData.summary || storyData.title || 'Feature'}`);
+  if (storyData.description) {
+    // The description is the richest signal Jira gives us — truncate rather than drop.
+    parts.push(`Description:\n${String(storyData.description).slice(0, 6000)}`);
+  }
+  const ac = Array.isArray(storyData.acceptanceCriteria) ? storyData.acceptanceCriteria : [];
+  if (ac.length) {
+    parts.push(`Acceptance Criteria:\n${ac.map((c, i) => `${i + 1}. ${c}`).join('\n')}`);
+  }
+  if (storyData.priority) parts.push(`Story Priority: ${storyData.priority}`);
+  return parts.join('\n\n');
 }
 
 class AIService {
   async generateTestPlan(storyData) {
     const storyTitle = storyData.summary || storyData.title || 'Feature';
-    const storyKey  = storyData.key  || storyData.id  || 'STORY';
+    const storyKey = storyData.key || storyData.id || 'STORY';
     const today = new Date().toISOString().split('T')[0];
 
     // Mock plan (no API key) — all 14 template sections
@@ -139,8 +399,6 @@ class AIService {
       };
     }
 
-    const systemMsg = `You are a senior QA lead. Generate a professional, detailed test plan JSON strictly following the given schema. Return valid JSON only — no markdown, no explanation.`;
-
     const schema = `{
   "storyKey": "string",
   "storyTitle": "string",
@@ -149,12 +407,12 @@ class AIService {
   "prepared_by": "QA Team",
   "date": "YYYY-MM-DD",
   "objective": "string (2-4 sentences)",
-  "scope": "string (1-2 sentences describing what is being tested)",
+  "scope": "string (2-4 sentences describing what is being tested)",
   "inclusions": ["string"],
   "exclusions": ["string"],
   "test_environments": [{"name":"string","browser":"string","os":"string","device":"string","url":"string"}],
   "defect_reporting_procedure": "string",
-  "test_strategy": "string (3-5 sentences describing testing approach)",
+  "test_strategy": "string (4-6 sentences describing testing approach)",
   "test_schedule": [{"phase":"string","start":"YYYY-MM-DD","end":"YYYY-MM-DD","owner":"string"}],
   "test_deliverables": ["string"],
   "entry_criteria": ["string"],
@@ -168,238 +426,208 @@ class AIService {
   "approvals": [{"role":"string","name":"","signature":"","date":""}]
 }`;
 
-    const userMsg = `Generate a complete test plan for this Jira story. Assume the target application being tested is "https://www.saucedemo.com/". Please incorporate context of this website where applicable, but rely strictly on the requirements provided in the story:\n\n${JSON.stringify(
-      Array.isArray(storyData) ? storyData : [storyData], null, 2
-    )}\n\nToday's date: ${today}\n\nUse this exact JSON schema:\n${schema}\n\nFill all fields with specific, meaningful values derived from the story. Return ONLY valid JSON.`;
+    const prompt = `You are a senior QA lead. Produce a professional, detailed test plan as JSON.
+Return valid JSON only — no markdown, no commentary.
+
+${appUnderTest(storyData)}
+Today's date: ${today}
+
+Jira story:
+${buildStoryContext(storyData)}
+
+Use this exact JSON schema:
+${schema}
+
+Depth requirements — a thin plan is not acceptable:
+- Every list section (inclusions, exclusions, test_deliverables, all four criteria pairs) must contain at least 5 specific, story-derived items. Generic filler such as "testing is complete" does not count.
+- test_environments: at least 4 rows spanning desktop and mobile.
+- test_schedule: at least 6 phases with realistic sequential dates starting from today.
+- risks_and_mitigations: at least 5 risks specific to this story, each with a concrete mitigation.
+- tools: at least 4 tools with a stated purpose.
+- Derive every field from the story above. Do not invent requirements the story does not imply.
+
+${VARIATION_RULE(runToken())}
+
+Return ONLY valid JSON.`;
 
     try {
-      const content = await callAI([{ role: 'user', content: `${systemMsg}\n\n${userMsg}` }], 3500);
+      const content = await callAI(prompt, outputBudget(6000));
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      const raw = jsonMatch ? jsonMatch[0] : content;
-      return JSON.parse(raw);
+      return JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch (error) {
       console.error('Error generating test plan:', error);
       throw new Error('Failed to generate test plan: ' + (error.message || error));
     }
   }
 
-  async generateTestCases(storyData, testPlanScope) {
-    const isCustom = storyData.title && String(storyData.title).includes('[Custom]');
+  /**
+   * Generates one batch of test cases.
+   *
+   * @param storyData      Jira story or Custom Generator input.
+   * @param testPlanScope  Test plan context and/or `generation` form options.
+   * @param batch          { size, index, exclude[] } — `exclude` holds scenario
+   *                       titles already produced so this batch adds new ground
+   *                       instead of repeating. Omit for a single default batch.
+   */
+  async generateTestCases(storyData = {}, testPlanScope = {}, batch = {}) {
+    const opts = readOptions(testPlanScope);
+    const size = Math.min(25, Math.max(1, Number(batch.size) || DEFAULT_BATCH_SIZE));
+    const batchIndex = Number(batch.index) || 0;
+    const exclude = Array.isArray(batch.exclude) ? batch.exclude : [];
+    const isCustom = String(storyData.title || '').includes('[Custom]');
+    const moduleName = isCustom
+      ? String(storyData.title).replace('[Custom] Module: ', '')
+      : storyData.summary || storyData.title || 'the feature under test';
 
-    const schema = `[
-  {
-    "scenario": "string",
-    "tid": "string (e.g. TC_001)",
-    "testcase_description": "string",
-    "precondition": "string",
-    "test_steps": ["string (step 1)", "string (step 2)"],
-    "expected_result": "string",
-    "actual_result": "",
-    "status": "Not Executed",
-    "executed_qa_name": "",
-    "misc_comments": "",
-    "priority": "High|Medium|Low",
-    "is_automated": "Yes|No"
-  }
-]`;
-
-    if (isCustom) {
-      console.log('Custom Generator Detected: Attempting local AI query (Ollama gemma3:1b)...');
-      const prompt = `You are an expert QA engineer. Generate detailed test cases strictly following the provided structure which is based on an official Test Case PDF Template. 
-Return ONLY a valid JSON array where each object matches this EXACT schema:
-${schema}
-
-User Story: ${storyData.title || storyData.summary || 'Feature'}
-Acceptance Criteria: ${JSON.stringify(storyData.acceptanceCriteria || [])}
-Test Plan Scope: ${JSON.stringify(testPlanScope || {})}
-
-Instructions: Generate test cases strictly based on the provided user story data, test scenarios, or test plan constraints. If the provided context is broad or minimal, you MUST systematically generate at least 20-25 comprehensive test cases covering positive, negative, edge cases, and boundary scenario mappings. Return ONLY a valid JSON array.`;
-
-      try {
-        const response = await axios.post('http://localhost:11434/api/generate', {
-          model: 'gemma3:1b',
-          prompt: prompt,
-          stream: false
-        }, { timeout: 120000 }); // Increase timeout to 2 minutes for local LLM warming up
-        
-        const content = response.data.response || '';
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        return JSON.parse(jsonMatch ? jsonMatch[0] : content);
-      } catch (err) {
-        console.error('Local Ollama generation failed (timeout or unavailable). Falling back to dynamic mock...');
-      }
-    }
-
+    // No cloud key: local Ollama first (if the operator is running one), then mock.
+    // This used to run on every custom request and cost a 2-minute timeout even
+    // when a cloud key was configured.
     if (!apiKey || apiKey === 'your_claude_api_key_here') {
-      console.warn('Anthropic not configured - generating dynamic 25 mock array natively');
-      
-      const moduleName = storyData.title || 'the target module';
-      const scenarioTarget = storyData.summary || storyData.title || 'the core feature';
-      const cleanMod = isCustom ? String(storyData.title).replace('[Custom] Module: ', '') : 'Swag Labs';
-
-      const mockCases = [];
-      const numToGenerate = 25;
-      
-      if (!isCustom) {
-        // If it looks like SauceDemo, keep the explicit SauceDemo cases, otherwise generate dynamic ones based on title
-        const isSauceDemo = scenarioTarget.toLowerCase().includes('sauce') || scenarioTarget.toLowerCase().includes('swag');
-        
-        const baseCases = isSauceDemo ? [
-          { scenario: 'Successful login standard user', steps: ['Enter standard_user', 'Enter secret_sauce', 'Click Login'], exp: 'Login Success', prio: 'High' },
-          { scenario: 'Login locked out user', steps: ['Enter locked_out_user', 'Enter secret_sauce', 'Click Login'], exp: 'Error: Locked out', prio: 'Critical' },
-          // ... (I'll keep the ones below but add more generic ones if not SauceDemo)
-        ] : [
-          { scenario: `Happy path: Basic ${scenarioTarget} flow`, steps: [`1. Open ${cleanMod}`, `2. Initiate ${scenarioTarget}`, `3. Submit with valid inputs`], exp: `Successful completion of ${scenarioTarget}`, prio: 'High' },
-          { scenario: `Negative: ${scenarioTarget} with empty inputs`, steps: [`1. Open ${cleanMod}`, `2. Leave all fields empty`, `3. Submit`], exp: 'Validation error displayed', prio: 'High' },
-          { scenario: `Boundary: Maximum character limit for ${scenarioTarget}`, steps: [`1. Prepare long input string`, `2. Paste into fields`, `3. Submit`], exp: 'Input truncated or error shown', prio: 'Medium' },
-          { scenario: `Security: Unauthorized access attempt for ${scenarioTarget}`, steps: [`1. Clear session cookies`, `2. Attempt to access endpoint`, `3. Verify redirect`], exp: 'Redirected to login', prio: 'Critical' }
-        ];
-
-        // Fill up to 25
-        for (let i = 0; i < numToGenerate; i++) {
-          const item = baseCases[i % baseCases.length];
-          mockCases.push({
-            scenario: i < baseCases.length ? item.scenario : `${item.scenario} - Variant ${i}`,
-            tid: `TC_${String(i + 1).padStart(3, '0')}`,
-            testcase_description: `Verify ${scenarioTarget} meets requirement ${i+1}.`,
-            precondition: `System is in stable state.`,
-            test_steps: i < baseCases.length ? item.steps.map((s, idx) => `${idx+1}. ${s}`) : [`1. Process step ${i}`, `2. Verify state ${i}`],
-            expected_result: i < baseCases.length ? item.exp : `Expected outcome for ${scenarioTarget} variant ${i}`,
-            actual_result: '',
-            status: 'Not Executed',
-            executed_qa_name: '',
-            misc_comments: 'Mock data generated due to missing AI credentials',
-            priority: i < baseCases.length ? item.prio : 'Medium',
-            is_automated: i % 2 === 0 ? 'Yes' : 'No'
-          });
-        }
-      } else {
-        const formTypes = ['Positive', 'Negative', 'Edge Case', 'Boundary', 'UI/UX'];
-        // Build 25 Dynamic Custom Mock Cases based precisely on generated Custom inputs
-        for (let i = 0; i < numToGenerate; i++) {
-          const type = formTypes[i % formTypes.length];
-          const scenarioType = (i % 2 === 0) ? "Functional" : "Usability";
-          const priority = (i % 5 === 0) ? "Critical" : (i % 3 === 0 ? "High" : "Medium");
-          
-          let scenarioTitle = `${type}: Verify ${cleanMod} ${scenarioTarget.split(' ').slice(0, 3).join(' ')} - Part ${i+1}`;
-          let expResult = `System behavior aligns with ${cleanMod} expectations for ${type} flow.`;
-
-          if (type === 'Negative') {
-              scenarioTitle = `Negative: Invalid input validation for ${cleanMod} - Scenario ${i+1}`;
-              expResult = `Application rejects the invalid state with a specific error message.`;
-          } else if (type === 'Edge Case') {
-              scenarioTitle = `Edge: Boundary condition check for ${cleanMod} at point ${i+1}`;
-              expResult = `System maintains data integrity at the tested edge limit.`;
-          }
-
-          mockCases.push({
-            scenario: scenarioTitle,
-            tid: `TC_CUS_${String(i + 1).padStart(3, '0')}`,
-            testcase_description: `Deep validation of ${cleanMod} targeting ${scenarioTarget} with focus on ${type} and ${scenarioType} metrics.`,
-            precondition: `Environment configured for ${cleanMod}. User access verified.`,
-            test_steps: [
-              `1. Navigate to https://www.saucedemo.com/`,
-              `2. Ensure system is tracking ${scenarioTarget.substring(0, 40)}`,
-              `3. Execute the ${type} validation scenario`
-            ],
-            expected_result: type === 'Negative' ? `Error message displayed: Invalid input or state.` : `Login success or feature validated successfully.`,
-            actual_result: '',
-            status: 'Not Executed',
-            executed_qa_name: '',
-            misc_comments: `Automatically mapped ${type} case for ${cleanMod}`,
-            priority: priority,
-            is_automated: i % 2 === 0 ? 'Yes' : 'No'
-          });
-        }
-      }
-      return mockCases;
+      const ollamaCases = await this.tryOllama(storyData, testPlanScope, size, exclude);
+      if (ollamaCases) return ollamaCases;
+      console.warn('No AI provider configured — returning mock test cases');
+      return this.mockCases(storyData, opts, size, batchIndex, isCustom, moduleName);
     }
 
-    const prompt = `You are an expert QA engineer. Generate detailed test cases for the following user story.
-Return ONLY a valid JSON array. No explanations, no markdown, no code blocks - JUST the JSON array.
+    const avoid = exclude.length
+      ? `\nScenarios already covered — do NOT repeat these, and do not produce near-duplicates of them:\n${exclude
+          .slice(-60)
+          .map((s) => `- ${s}`)
+          .join('\n')}\n`
+      : '';
 
-Schema for each object:
-${schema}
+    const prompt = `You are an expert QA engineer. Generate exactly ${size} NEW test cases as a JSON array.
+Return ONLY a JSON array of ${size} objects, in the form {"test_cases": [ ... ]} or a bare array. No markdown, no commentary.
 
-User Story: ${storyData.title || storyData.summary || 'Feature'}
-Acceptance Criteria: ${JSON.stringify(storyData.acceptanceCriteria || [])}
+Object schema (every field required):
+${CASE_SCHEMA}
 
-Instructions:
-1. Target application: "https://www.saucedemo.com/".
-2. Test Steps: Must be realistic, chronological, actionable QA steps (e.g. "1. Navigate to https://www.saucedemo.com/", "2. Enter username 'standard_user'", "3. Enter password 'secret_sauce'", "4. Click Login button"). Never use vague terms.
-3. Expected Results: Must be crisp and direct (e.g. "Login success - user redirected to inventory page", "Error: Epic sadface: Username and password do not match any user in this service"). No fluffy language.
-4. Strictly follow the Jira story. Do NOT invent features outside the acceptance criteria.
-5. Generate 10-12 comprehensive test cases covering positive, negative, and edge scenarios.
-6. IMPORTANT: The response must be a COMPLETE, VALID JSON array. Do not truncate.`;
+${appUnderTest(storyData, opts.targetApp)}
+Application type: ${opts.appType}
+Feature / module: ${moduleName}
+
+${buildStoryContext(storyData)}
+${opts.planScopeText ? `\nTest plan scope / constraints:\n${opts.planScopeText}\n` : ''}${opts.context ? `\nAdditional context from the QA engineer:\n${opts.context}\n` : ''}
+Coverage to draw from: ${opts.types.join(', ')}.
+Priority focus: ${opts.priority}.
+${avoid}
+Rules:
+1. Test steps must be concrete, chronological, actionable QA steps naming the real UI elements and test data of the application described above — e.g. "1. Open the login page", "2. Enter 'user@example.com' in the Email field", "3. Click the Log In button". Never write vague steps like "perform the action" or "verify the state".
+2. Expected results must be crisp and specific — e.g. "User is redirected to the inventory page and the cart icon is visible", or the exact error text the application shows. No fluffy language.
+3. Stay strictly within what the story, acceptance criteria and description above imply. Do not invent unrelated features.
+4. Every scenario title must be meaningfully distinct — a different behaviour being verified, not a renumbered restatement of the same check.
+5. Spread the batch across the requested coverage types rather than producing ${size} happy-path variants.
+6. Return a COMPLETE, VALID JSON array of exactly ${size} objects. Do not truncate.
+
+${VARIATION_RULE(batch.seed || runToken())}`;
 
     try {
-      const content = await callAI([{ role: 'user', content: prompt }], 8000);
-      
-      // Extract JSON array from response
-      let jsonStr = content.trim();
-      
-      // Remove markdown code blocks if present
-      jsonStr = jsonStr.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
-      
-      // Find the JSON array boundaries
-      const startIdx = jsonStr.indexOf('[');
-      const endIdx = jsonStr.lastIndexOf(']');
-      
-      if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-        jsonStr = jsonStr.substring(startIdx, endIdx + 1);
-      }
-      
-      try {
-        return JSON.parse(jsonStr);
-      } catch (parseErr) {
-        // Attempt to repair truncated JSON by closing unclosed structures
-        console.warn('Initial JSON parse failed, attempting repair...');
-        // Find last complete object by finding last "},"  or "}" before a potential truncation
-        const lastValidClose = jsonStr.lastIndexOf('},');
-        if (lastValidClose > 0) {
-          const repaired = jsonStr.substring(0, lastValidClose + 1) + ']';
-          return JSON.parse(repaired);
-        }
-        throw parseErr;
-      }
+      const content = await callAI(prompt, tokensForBatch(size));
+      const cases = parseCaseArray(content, `test-cases batch ${batchIndex + 1}`);
+      return cases.filter((c) => c && (c.scenario || c.testcase_description));
     } catch (error) {
       console.error('Error generating test cases:', error);
       throw new Error('Failed to generate test cases: ' + (error.message || error));
     }
   }
 
+  // Local fallback for offline use. Only reached when no cloud key is set.
+  async tryOllama(storyData, testPlanScope, size, exclude) {
+    const model = process.env.OLLAMA_MODEL;
+    if (!model) return null;
+    const baseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+    const opts = readOptions(testPlanScope);
+    const prompt = `You are an expert QA engineer. Generate exactly ${size} test cases as a valid JSON array matching this schema:
+${CASE_SCHEMA}
+
+${buildStoryContext(storyData)}
+Coverage: ${opts.types.join(', ')}.
+${exclude.length ? `Do not repeat these scenarios:\n${exclude.slice(-40).map((s) => `- ${s}`).join('\n')}` : ''}
+Return ONLY the JSON array.`;
+
+    try {
+      console.log(`Querying local Ollama model "${model}" at ${baseUrl}...`);
+      const response = await axios.post(
+        `${baseUrl}/api/generate`,
+        { model, prompt, stream: false },
+        { timeout: 120000 }
+      );
+      return parseCaseArray(response.data.response || '', 'ollama');
+    } catch (err) {
+      console.error('Local Ollama generation failed:', err.message);
+      return null;
+    }
+  }
+
+  // Deterministic stand-in so the UI is usable without credentials. Honours the
+  // requested batch size instead of always emitting 25.
+  mockCases(storyData, opts, size, batchIndex, isCustom, moduleName) {
+    const scenarioTarget = storyData.summary || storyData.title || 'the core feature';
+    const types = opts.types.length ? opts.types : ['Positive', 'Negative', 'Edge Case', 'Boundary', 'UI/UX'];
+    const cases = [];
+
+    for (let i = 0; i < size; i++) {
+      const n = batchIndex * size + i + 1;
+      const type = types[n % types.length];
+      const priority = n % 5 === 0 ? 'Critical' : n % 3 === 0 ? 'High' : 'Medium';
+
+      cases.push({
+        scenario: `${type}: ${moduleName} — check ${n}`,
+        tid: `${isCustom ? 'TC_CUS_' : 'TC_'}${String(n).padStart(3, '0')}`,
+        testcase_description: `Validate ${moduleName} for ${scenarioTarget} under a ${type} condition.`,
+        precondition: `Environment configured for ${moduleName}. Test user access verified.`,
+        test_steps: [
+          `1. Open ${TARGET_APP_URL || 'the application under test'}`,
+          `2. Open ${moduleName}`,
+          `3. Execute the ${type} validation for check ${n}`,
+        ],
+        expected_result:
+          type === 'Negative'
+            ? 'The application rejects the invalid input with a specific error message.'
+            : `${moduleName} behaves as specified for the ${type} flow.`,
+        actual_result: '',
+        status: 'Not Executed',
+        executed_qa_name: '',
+        misc_comments: 'Mock data — no AI provider configured',
+        priority,
+        is_automated: n % 2 === 0 ? 'Yes' : 'No',
+      });
+    }
+    return cases;
+  }
+
   async generateAutomationCode(testCase, framework, options) {
     let prompt = '';
 
     if (options.featureFileBDD) {
-      prompt = `The target application is "https://www.saucedemo.com/". Generate a standard Cucumber BDD Feature File for the following test case. 
+      prompt = `${TARGET_APP_URL ? `The target application is "${TARGET_APP_URL}". ` : ''}Generate a standard Cucumber BDD Feature File for the following test case.
 Format as a proper .feature file using Given/When/Then syntax, followed by the step definition code in ${framework}.
 Include: ${options.pageObjectModel ? 'Page Object Model implementation mapping to the steps,' : ''}
 ${options.addAssertions ? 'assertions in the Then steps,' : ''}
 and ${options.addComments ? 'descriptive comments' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Use appropriate locators for saucedemo.com based on the steps, but strictly adhere to the provided Test Case logic. Return only the code (Feature file content followed by step definition implementation), no markdown blocks of explanation.`;
+Derive locators from the test case steps and the application they describe, but strictly adhere to the provided Test Case logic. Return only the code (Feature file content followed by step definition implementation), no markdown blocks of explanation.`;
     } else if (framework === 'selenium-java') {
-      prompt = `The target application is "https://www.saucedemo.com/". Generate production-ready Selenium WebDriver code in Java using 
+      prompt = `${TARGET_APP_URL ? `The target application is "${TARGET_APP_URL}". ` : ''}Generate production-ready Selenium WebDriver code in Java using
 TestNG and${options.pageObjectModel ? ' Page Object Model' : ''} for the following test case.
-Include: imports, ${options.pageObjectModel ? 'page class,' : ''} test class, 
+Include: imports, ${options.pageObjectModel ? 'page class,' : ''} test class,
 ${options.addAssertions ? 'assertions,' : ''} explicit waits,
 and ${options.addComments ? 'meaningful comments' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Use appropriate locators for saucedemo.com based on the steps. Return only the Java code, no explanation.`;
-    } else if (framework === 'playwright-js') {
-      prompt = `The target application is "https://www.saucedemo.com/". Generate production-ready Playwright test code in JavaScript/TypeScript
+Derive locators from the test case steps and the application they describe. Return only the Java code, no explanation.`;
+    } else {
+      const label =
+        framework === 'cypress-js' ? 'Cypress' : framework === 'protractor-js' ? 'Protractor' : 'Playwright';
+      prompt = `${TARGET_APP_URL ? `The target application is "${TARGET_APP_URL}". ` : ''}Generate production-ready ${label} test code in JavaScript/TypeScript
 using ${options.pageObjectModel ? 'Page Object Model pattern ' : ''}for the following test case.
-Include: imports, page fixtures, locators, ${options.addAssertions ? 'assertions,' : ''}
+Include: imports, fixtures/hooks, locators, ${options.addAssertions ? 'assertions,' : ''}
 async/await pattern, and ${options.addComments ? 'descriptive test blocks' : 'clean code'}.
 Test Case: ${JSON.stringify(testCase)}
-Use appropriate locators for saucedemo.com based on the steps. Return only the code, no explanation.`;
+Derive locators from the test case steps and the application they describe. Return only the code, no explanation.`;
     }
 
     try {
-      const content = await callAI([{ role: 'user', content: prompt }], 3000);
-
-      return content;
+      return await callAI(prompt, 6000);
     } catch (error) {
       console.error('Error generating automation code:', error);
       throw new Error('Failed to generate automation code: ' + error.message);

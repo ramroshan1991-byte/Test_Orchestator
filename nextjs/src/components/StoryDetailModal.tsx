@@ -238,7 +238,7 @@ export function StoryDetailModal({
             {s.acceptanceCriteria && s.acceptanceCriteria.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <CheckCircle className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
                   <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">
                     Acceptance Criteria
                   </h3>
@@ -246,7 +246,7 @@ export function StoryDetailModal({
                 <ul className="space-y-2">
                   {s.acceptanceCriteria.map((criterion: string, idx: number) => (
                     <li key={idx} className="flex gap-3 text-slate-200 leading-relaxed">
-                      <span className="text-green-400 font-bold mt-1">✓</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold mt-1">✓</span>
                       <span>{criterion}</span>
                     </li>
                   ))}
@@ -266,7 +266,7 @@ export function StoryDetailModal({
             {generatingPlan && (
               <div className="p-4 bg-slate-700/60 rounded-lg border border-purple-700/40 space-y-2">
                 <p className="text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                  <Loader2 className="w-4 h-4 animate-spin text-purple-700 dark:text-purple-400" />
                   Generating Test Plan...
                 </p>
                 {planSteps.map((step, i) => (
@@ -274,7 +274,7 @@ export function StoryDetailModal({
                     key={i}
                     className={`text-sm transition-all ${
                       planStepIndex !== null && i < planStepIndex
-                        ? 'text-green-400'
+                        ? 'text-emerald-700 dark:text-emerald-400'
                         : planStepIndex === i
                         ? 'text-purple-300 font-medium'
                         : 'text-slate-500'
@@ -284,7 +284,7 @@ export function StoryDetailModal({
                   </p>
                 ))}
                 {planStepIndex !== null && planStepIndex >= planSteps.length && (
-                  <p className="text-green-400 text-sm font-medium">✅ Saving test plan...</p>
+                  <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium">✅ Saving test plan...</p>
                 )}
               </div>
             )}

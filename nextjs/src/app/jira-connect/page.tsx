@@ -126,15 +126,15 @@ export default function JiraConnectPage() {
     switch (status?.toLowerCase()) {
       case 'done':
       case 'closed':
-        return 'bg-green-900 text-green-200 border-green-700';
+        return 'status-pass';
       case 'in progress':
       case 'in_progress':
-        return 'bg-blue-900 text-blue-200 border-blue-700';
+        return 'status-idle';
       case 'to do':
       case 'todo':
-        return 'bg-slate-700 text-slate-200 border-slate-600';
+        return 'status-idle';
       default:
-        return 'bg-slate-700 text-slate-200 border-slate-600';
+        return 'status-idle';
     }
   };
 
@@ -160,27 +160,27 @@ export default function JiraConnectPage() {
     switch (priority?.toLowerCase()) {
       case 'critical':
       case 'highest':
-        return 'bg-red-900 text-red-200 border-red-700';
+        return 'status-fail';
       case 'high':
-        return 'bg-orange-900 text-orange-200 border-orange-700';
+        return 'status-block';
       case 'medium':
-        return 'bg-yellow-900 text-yellow-200 border-yellow-700';
+        return 'status-run';
       case 'low':
       case 'lowest':
-        return 'bg-blue-900 text-blue-200 border-blue-700';
+        return 'status-idle';
       default:
-        return 'bg-slate-700 text-slate-200 border-slate-600';
+        return 'status-idle';
     }
   };
 
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
-            <Link2 className="w-8 h-8 text-blue-400" />
+            <Link2 className="w-8 h-8 text-blue-700 dark:text-blue-400" />
             <h1 className="text-3xl font-bold text-slate-100">Jira Connect</h1>
           </div>
           <p className="text-slate-400">
@@ -189,7 +189,7 @@ export default function JiraConnectPage() {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-8">
           {/* Connection Form */}
           <div className="card p-6 max-w-2xl">
             <h2 className="text-xl font-bold text-slate-100 mb-6">Jira Configuration</h2>
@@ -259,7 +259,7 @@ export default function JiraConnectPage() {
                   {loading ? 'Connecting...' : 'Connect to Jira'}
                 </button>
                 {synced && (
-                  <span className="flex items-center gap-2 text-green-400 text-sm">
+                  <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-sm">
                     <CheckCircle className="w-4 h-4" />
                     Connected at {synced.toLocaleTimeString()}
                   </span>
@@ -311,11 +311,11 @@ export default function JiraConnectPage() {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-mono text-blue-400 font-bold">{story.key}</span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(story.priority)}`}>
+                          <span className="font-mono text-blue-700 dark:text-blue-400 font-bold">{story.key}</span>
+                          <span className={getPriorityColor(story.priority)}>
                             {story.priority}
                           </span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(story.status)}`}>
+                          <span className={getStatusColor(story.status)}>
                             {story.status}
                           </span>
                         </div>

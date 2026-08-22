@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import aiService from '@/lib/services/aiService';
 
+// A full 14-section plan at 16k output tokens takes well over the 10s default.
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();

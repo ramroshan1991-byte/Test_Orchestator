@@ -4,14 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/Toast';
 import { useAppStore } from '@/store/appStore';
 import { RefreshCcw, Zap } from 'lucide-react';
+import { generateTestCasesBatched, type GenerationProgress } from '@/lib/testCaseGeneration';
 
 export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSuccess?: () => void }) {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<GenerationProgress | null>(null);
   const { setTestCases, testCases: storeTestCases } = useAppStore();
 
   const [form, setForm] = useState({
     moduleName: '',
+    targetApp: '',
     scenario: '',
     ac: '',
     appType: 'Web App',
@@ -40,7 +43,7 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
   };
 
   const clearForm = () => {
-    const fresh = { moduleName:'', scenario:'', ac:'', appType:'Web App', priority:'All', types:['Positive', 'Negative', 'Edge Case'], count:'8-12', context:'' };
+    const fresh = { moduleName:'', targetApp:'', scenario:'', ac:'', appType:'Web App', priority:'All', types:['Positive', 'Negative', 'Edge Case'], count:'8-12', context:'' };
     setForm(fresh);
     localStorage.removeItem('to_custom_form');
   };
@@ -51,36 +54,72 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
       return;
     }
     setLoading(true);
+    setProgress(null);
     try {
-      const response = await fetch('/api/test-cases/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          storyData: {
-            title: `[Custom] Module: ${form.moduleName || 'New Feature'}`,
-            summary: form.scenario,
-            acceptanceCriteria: form.ac ? [form.ac] : []
-          },
-          testPlanScope: {
-            scope: `Types: ${form.types.join(', ')}. Priority: ${form.priority}. App Type: ${form.appType}. Context: ${form.context}. Requested Range: ${form.count}`
-          }
-        })
-      });
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-      
-      const newCases = data.testCases || data;
-      const taggedCases = newCases.map((tc: any) => ({ ...tc, source: 'Custom', id: tc.tid || tc.id || `C_TC_${Math.floor(Math.random()*1000)}` }));
-      
-      const existing = storeTestCases['custom_gen'] || [];
-      setTestCases({ ...storeTestCases, custom_gen: [...taggedCases, ...existing] });
-      
-      showToast(`✅ Generated ${taggedCases.length} test cases!`, 'success');
+      // Split the acceptance criteria textarea into individual criteria — the
+      // count of criteria is what drives coverage depth on "Auto".
+      const criteria = form.ac
+        .split('\n')
+        .map((line) => line.replace(/^[-*•\d.\s]+/, '').trim())
+        .filter(Boolean);
+
+      const storyData = {
+        title: `[Custom] Module: ${form.moduleName || 'New Feature'}`,
+        summary: form.scenario,
+        description: [form.scenario, form.context].filter(Boolean).join('\n\n'),
+        acceptanceCriteria: criteria,
+      };
+
+      const generation = {
+        targetApp: form.targetApp,
+        count: form.count,
+        types: form.types,
+        priority: form.priority,
+        appType: form.appType,
+        context: form.context,
+      };
+
+      const result = await generateTestCasesBatched(
+        storyData,
+        { scope: `Types: ${form.types.join(', ')}. Priority: ${form.priority}. App Type: ${form.appType}.` },
+        generation,
+        setProgress
+      );
+
+      const taggedCases = result.testCases.map((tc: any) => ({
+        ...tc,
+        source: 'Custom',
+        id: tc.tid || tc.id,
+      }));
+
+      // Each feature gets its own suite. Previously every run was prepended to one
+      // shared `custom_gen` bucket, so generating for a new feature left the old
+      // feature's cases in the list and the count only ever grew.
+      const featureName = (form.moduleName || form.scenario.slice(0, 40) || 'Untitled feature').trim();
+      const groupKey = `custom:${featureName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+      const previous = (storeTestCases as any)[groupKey] || [];
+
+      const withFeature = taggedCases.map((tc: any) => ({ ...tc, feature: featureName }));
+      setTestCases({ ...storeTestCases, [groupKey]: withFeature } as any);
+
+      const replaced = previous.length
+        ? ` Replaced the previous ${previous.length} case(s) for "${featureName}".`
+        : '';
+
+      if (result.shortfall) {
+        showToast(`Generated ${taggedCases.length} test cases for "${featureName}". ${result.shortfall}${replaced}`, 'warning');
+      } else {
+        showToast(`✅ Generated ${taggedCases.length} test cases for "${featureName}".${replaced}`, 'success');
+      }
       if (onGenerateSuccess) onGenerateSuccess();
     } catch (error) {
-      showToast('❌ Generation failed — please try again', 'error');
+      showToast(
+        `❌ Generation failed: ${error instanceof Error ? error.message : 'please try again'}`,
+        'error'
+      );
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
@@ -98,6 +137,20 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1">Feature / Module Name</label>
           <input type="text" className="input bg-slate-800" placeholder="e.g. Login Page, Payment Flow" value={form.moduleName} onChange={e => updateForm('moduleName', e.target.value)} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Application Under Test</label>
+          <input
+            type="text"
+            className="input bg-slate-800"
+            placeholder="e.g. Facebook, or https://www.facebook.com/"
+            value={form.targetApp}
+            onChange={e => updateForm('targetApp', e.target.value)}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Name the product or paste its URL. Steps will use its real screens and data. Leave blank to infer it from the scenario below.
+          </p>
         </div>
 
         <div>
@@ -147,7 +200,7 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
           <div>
              <label className="block text-sm font-medium text-slate-300 mb-2">Number of Test Cases</label>
              <div className="flex flex-wrap gap-2">
-               {['Auto (AI decides)', '5-8', '8-12', '12-20'].map(c => (
+               {['Auto (AI decides)', '8-12', '12-20', '20-30', '30-40', '40-60'].map(c => (
                  <button key={c} onClick={() => updateForm('count', c)} className={`px-3 py-1.5 rounded-md text-sm transition-colors ${form.count === c ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}>{c}</button>
                ))}
              </div>
@@ -158,6 +211,26 @@ export default function CustomGenerator({ onGenerateSuccess }: { onGenerateSucce
            <label className="block text-sm font-medium text-slate-300 mb-1">Additional Context (optional)</label>
            <textarea className="input bg-slate-800 min-h-[60px]" placeholder="Tech stack, known edge cases, env details..." value={form.context} onChange={e => updateForm('context', e.target.value)} />
         </div>
+
+        {/* Batch progress — a 40-case run is several AI calls, so show where it is. */}
+        {progress && (
+          <div className="rounded-lg border border-blue-800/50 bg-blue-950/30 px-4 py-3">
+            <div className="flex items-center justify-between text-xs text-blue-200 mb-2">
+              <span>
+                Generating batch {Math.min(progress.batch, progress.totalBatches)} of {progress.totalBatches}
+              </span>
+              <span className="font-mono">
+                {progress.collected} / {progress.target} cases
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.round((progress.collected / progress.target) * 100))}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-between items-center pt-4 border-t border-slate-800">
            <button onClick={clearForm} className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200"><RefreshCcw className="w-4 h-4" /> Clear Form</button>

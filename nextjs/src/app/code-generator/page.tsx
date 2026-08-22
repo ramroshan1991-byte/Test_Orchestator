@@ -183,18 +183,18 @@ export default function CodeGeneratorPage() {
   return (
     <div className="flex h-screen bg-slate-900">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pt-14 lg:pt-0">
         {/* Header */}
-        <header className="bg-slate-800 border-b border-slate-700 px-8 py-6">
+        <header className="bg-slate-800 border-b border-slate-700 px-4 sm:px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
-            <Code2 className="w-8 h-8 text-green-400" />
+            <Code2 className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
             <h1 className="text-3xl font-bold text-slate-100">Code Generator</h1>
           </div>
           <p className="text-slate-400">Generate automated test code in 4 steps</p>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6">
           {/* Step Indicator */}
           <div className="mb-8 flex items-center justify-between">
             {[1, 2, 3, 4].map((step) => (
@@ -205,7 +205,7 @@ export default function CodeGeneratorPage() {
                     className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all ${
                       currentStep >= step
                         ? 'bg-blue-600 text-white cursor-pointer hover:bg-blue-700'
-                        : 'bg-slate-700 text-gray-400 cursor-default'
+                        : 'bg-slate-700 text-slate-300 cursor-default'
                     }`}
                   >
                     {step <= 3 ? step : '✓'}
@@ -276,11 +276,11 @@ export default function CodeGeneratorPage() {
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-mono text-blue-400 font-bold">{tc.name}</p>
+                          <p className="font-mono text-blue-700 dark:text-blue-400 font-bold">{tc.name}</p>
                           <p className="text-slate-100 font-medium mt-1">{tc.title}</p>
                         </div>
                         {tc.codeGenerated && (
-                          <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                          <CheckCircle className="w-5 h-5 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
                         )}
                       </div>
                     </button>
